@@ -1,0 +1,1460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>FacePuzzle</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0D1117;
+    --surface: #161B22;
+    --surface2: #21262D;
+    --border: #30363D;
+    --text: #F0F4F8;
+    --text-muted: #8B949E;
+    --violet: #7C3AED;
+    --violet-light: #A78BFA;
+    --violet-glow: rgba(124,58,237,0.35);
+    --amber: #F59E0B;
+    --amber-glow: rgba(245,158,11,0.3);
+    --rose: #F43F5E;
+    --rose-glow: rgba(244,63,94,0.35);
+    --green: #10B981;
+    --green-glow: rgba(16,185,129,0.3);
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+    overflow-x: hidden;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    padding: 16px;
+  }
+
+  /* ── Header ── */
+  header {
+    width: 100%;
+    max-width: 900px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 0 20px;
+  }
+
+  .logo {
+    font-size: 1.4rem;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    background: linear-gradient(135deg, var(--violet-light), var(--amber));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    user-select: none;
+  }
+
+  .logo span { font-weight: 400; opacity: 0.6; }
+
+  .header-actions { display: flex; gap: 8px; }
+
+  /* ── Buttons ── */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 18px;
+    border-radius: var(--radius-sm);
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.18s ease;
+    user-select: none;
+    white-space: nowrap;
+  }
+
+  .btn-primary {
+    background: var(--violet);
+    color: #fff;
+    box-shadow: 0 0 20px var(--violet-glow);
+  }
+  .btn-primary:hover { background: #6d28d9; box-shadow: 0 0 28px var(--violet-glow); transform: translateY(-1px); }
+  .btn-primary:active { transform: translateY(0); }
+
+  .btn-secondary {
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn-secondary:hover { background: var(--border); transform: translateY(-1px); }
+  .btn-secondary:active { transform: translateY(0); }
+
+  .btn-amber {
+    background: var(--amber);
+    color: #0D1117;
+    box-shadow: 0 0 20px var(--amber-glow);
+  }
+  .btn-amber:hover { background: #d97706; transform: translateY(-1px); }
+
+  .btn-rose {
+    background: transparent;
+    color: var(--rose);
+    border: 1px solid var(--rose);
+  }
+  .btn-rose:hover { background: rgba(244,63,94,0.1); }
+
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; }
+
+  .btn svg { flex-shrink: 0; }
+
+  /* ── Screens ── */
+  .screen {
+    display: none;
+    width: 100%;
+    max-width: 900px;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    animation: fadeIn 0.3s ease;
+  }
+
+  .screen.active { display: flex; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── Camera Screen ── */
+  .camera-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .camera-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .video-wrapper {
+    position: relative;
+    width: 100%;
+    max-width: 480px;
+    aspect-ratio: 4/3;
+    border-radius: var(--radius);
+    overflow: hidden;
+    background: var(--bg);
+    border: 2px solid var(--border);
+  }
+
+  #videoEl {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transform: scaleX(-1);
+    display: block;
+  }
+
+  .video-grid-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.18;
+  }
+
+  .video-grid-overlay line {
+    stroke: var(--violet-light);
+    stroke-width: 1;
+  }
+
+  .video-corner {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border-color: var(--violet);
+    border-style: solid;
+    opacity: 0.8;
+  }
+  .video-corner.tl { top: 10px; left: 10px; border-width: 2px 0 0 2px; border-radius: 4px 0 0 0; }
+  .video-corner.tr { top: 10px; right: 10px; border-width: 2px 2px 0 0; border-radius: 0 4px 0 0; }
+  .video-corner.bl { bottom: 10px; left: 10px; border-width: 0 0 2px 2px; border-radius: 0 0 0 4px; }
+  .video-corner.br { bottom: 10px; right: 10px; border-width: 0 2px 2px 0; border-radius: 0 0 4px 0; }
+
+  .camera-error {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 32px;
+    text-align: center;
+    color: var(--rose);
+  }
+
+  .camera-error svg { opacity: 0.7; }
+
+  .camera-error p { color: var(--text-muted); font-size: 0.9rem; line-height: 1.6; }
+
+  .camera-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  /* ── Snapshot canvas (hidden capture) ── */
+  #snapCanvas { display: none; }
+
+  /* ── Difficulty Screen ── */
+  .difficulty-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+  }
+
+  .preview-thumb {
+    width: 160px;
+    height: 160px;
+    border-radius: var(--radius);
+    object-fit: cover;
+    border: 2px solid var(--border);
+    box-shadow: 0 0 40px var(--violet-glow);
+  }
+
+  .difficulty-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    text-align: center;
+  }
+
+  .difficulty-subtitle {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    text-align: center;
+    margin-top: -16px;
+  }
+
+  .diff-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    width: 100%;
+    max-width: 380px;
+  }
+
+  .diff-btn {
+    background: var(--surface2);
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px 12px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.18s ease;
+    color: var(--text);
+    font-family: 'Space Grotesk', sans-serif;
+  }
+
+  .diff-btn:hover {
+    border-color: var(--violet);
+    background: rgba(124,58,237,0.1);
+    transform: translateY(-2px);
+    box-shadow: 0 0 20px var(--violet-glow);
+  }
+
+  .diff-btn .diff-size {
+    font-size: 1.5rem;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    background: linear-gradient(135deg, var(--violet-light), var(--amber));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .diff-btn .diff-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+
+  .diff-btn .diff-pieces {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+  }
+
+  /* ── Puzzle Screen ── */
+  #puzzleScreen {
+    gap: 16px;
+  }
+
+  .puzzle-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .stats-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .stat-chip {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 6px 14px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+  }
+
+  .stat-chip .stat-val {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: var(--text);
+  }
+
+  .stat-chip.timer-chip .stat-val { color: var(--violet-light); }
+  .stat-chip.correct-chip .stat-val { color: var(--green); }
+
+  .puzzle-actions { display: flex; gap: 8px; }
+
+  /* ── Puzzle Board ── */
+  #puzzleBoard {
+    position: relative;
+    display: grid;
+    background: var(--surface2);
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: 0 0 60px rgba(0,0,0,0.5), 0 0 0 1px var(--border);
+    touch-action: none;
+    user-select: none;
+  }
+
+  .puzzle-cell {
+    position: relative;
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .puzzle-piece {
+    position: absolute;
+    inset: 0;
+    cursor: grab;
+    border-radius: 3px;
+    background-size: cover;
+    background-repeat: no-repeat;
+    transition: box-shadow 0.15s ease, transform 0.08s ease;
+    will-change: transform;
+    touch-action: none;
+    box-shadow: inset 0 0 0 0.5px rgba(255,255,255,0.08);
+  }
+
+  .puzzle-piece:hover {
+    z-index: 5;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5), inset 0 0 0 0.5px rgba(255,255,255,0.12);
+  }
+
+  .puzzle-piece.dragging {
+    cursor: grabbing;
+    z-index: 100;
+    transform: scale(1.06);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.7), 0 0 0 3px var(--rose), 0 0 20px var(--rose-glow) !important;
+    transition: box-shadow 0.1s ease;
+  }
+
+  .puzzle-piece.correct {
+    box-shadow: inset 0 0 0 2.5px var(--green), 0 0 12px var(--green-glow) !important;
+    transition: box-shadow 0.25s ease;
+  }
+
+  .puzzle-piece.correct.dragging {
+    box-shadow: 0 12px 40px rgba(0,0,0,0.7), 0 0 0 3px var(--rose), 0 0 20px var(--rose-glow) !important;
+  }
+
+  .piece-number {
+    position: absolute;
+    bottom: 3px;
+    right: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.6rem;
+    color: rgba(255,255,255,0.35);
+    pointer-events: none;
+    line-height: 1;
+  }
+
+  /* ── Win Overlay ── */
+  #winOverlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(13,17,23,0.88);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    animation: fadeIn 0.4s ease;
+  }
+
+  #winOverlay.show { display: flex; }
+
+  .win-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 32px;
+    max-width: 480px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+    box-shadow: 0 0 80px var(--violet-glow), 0 40px 80px rgba(0,0,0,0.5);
+    animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+
+  @keyframes popIn {
+    from { transform: scale(0.85); opacity: 0; }
+    to   { transform: scale(1); opacity: 1; }
+  }
+
+  .win-emoji {
+    font-size: 3.5rem;
+    line-height: 1;
+    filter: drop-shadow(0 0 20px rgba(245,158,11,0.5));
+    animation: bounce 0.6s ease 0.3s both;
+  }
+
+  @keyframes bounce {
+    0%   { transform: scale(0); }
+    60%  { transform: scale(1.2); }
+    100% { transform: scale(1); }
+  }
+
+  .win-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    background: linear-gradient(135deg, var(--violet-light), var(--amber));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-align: center;
+  }
+
+  .win-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    width: 100%;
+  }
+
+  .win-stat {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 14px 10px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .win-stat-label {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: 600;
+  }
+
+  .win-stat-val {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--violet-light);
+  }
+
+  .win-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+    width: 100%;
+  }
+
+  /* ── Leaderboard ── */
+  .leaderboard {
+    width: 100%;
+  }
+
+  .lb-title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .lb-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .lb-empty {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    padding: 16px;
+    background: var(--surface2);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+  }
+
+  .lb-row {
+    display: grid;
+    grid-template-columns: 28px 1fr 90px 60px 64px;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 12px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    margin-bottom: 6px;
+    font-size: 0.8rem;
+    transition: border-color 0.15s;
+  }
+
+  .lb-row:first-child { border-color: var(--amber); background: rgba(245,158,11,0.06); }
+  .lb-row:nth-child(2) { border-color: rgba(148,163,184,0.4); }
+  .lb-row:nth-child(3) { border-color: rgba(180,120,60,0.4); }
+
+  .lb-rank {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-align: center;
+  }
+
+  .lb-row:first-child .lb-rank { color: var(--amber); }
+
+  .lb-date { color: var(--text-muted); font-size: 0.75rem; }
+
+  .lb-time {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+    color: var(--violet-light);
+    text-align: right;
+  }
+
+  .lb-moves {
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    text-align: right;
+  }
+
+  .lb-diff {
+    font-size: 0.7rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 2px 6px;
+    text-align: center;
+    color: var(--text-muted);
+  }
+
+  /* ── Progress bar ── */
+  .progress-bar-wrap {
+    width: 100%;
+    height: 4px;
+    background: var(--surface2);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--violet), var(--amber));
+    border-radius: 2px;
+    transition: width 0.3s ease;
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 600px) {
+    body { padding: 10px; }
+    .logo { font-size: 1.1rem; }
+    .win-stats { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .win-stat-val { font-size: 1rem; }
+    .lb-row { grid-template-columns: 24px 1fr 80px 50px 54px; font-size: 0.75rem; }
+    .diff-grid { grid-template-columns: repeat(3, 1fr); }
+    .puzzle-topbar { justify-content: center; }
+    .stats-row { justify-content: center; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  }
+
+  /* ── Confetti canvas ── */
+  #confettiCanvas {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 999;
+    display: none;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Face<span>Puzzle</span></div>
+  <div class="header-actions">
+    <button class="btn btn-secondary" id="headerNewPhoto" style="display:none" onclick="goToCamera()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      New Photo
+    </button>
+  </div>
+</header>
+
+<!-- ───── CAMERA SCREEN ───── -->
+<div class="screen active" id="cameraScreen">
+  <div class="camera-card">
+    <div class="camera-label">Position your face in the frame</div>
+
+    <div class="video-wrapper" id="videoWrapper">
+      <video id="videoEl" autoplay playsinline muted></video>
+      <svg class="video-grid-overlay" id="gridOverlay" viewBox="0 0 480 360" preserveAspectRatio="none"></svg>
+      <div class="video-corner tl"></div>
+      <div class="video-corner tr"></div>
+      <div class="video-corner bl"></div>
+      <div class="video-corner br"></div>
+
+      <div class="camera-error" id="cameraError">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 1l22 22M17 17H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4m3-3h6l2 3h4a2 2 0 0 1 2 2v9.34m-7.72-2.06A4 4 0 1 1 7.51 7.5"/></svg>
+        <strong>Camera access denied</strong>
+        <p>Please allow camera access in your browser settings, then refresh the page.</p>
+      </div>
+    </div>
+
+    <canvas id="snapCanvas"></canvas>
+
+    <div class="camera-actions">
+      <button class="btn btn-primary" id="takePhotoBtn" onclick="takePhoto()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        Take Photo
+      </button>
+      <button class="btn btn-secondary" id="uploadBtn" onclick="triggerUpload()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Upload Image
+      </button>
+      <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="handleFileUpload(event)">
+    </div>
+  </div>
+</div>
+
+<!-- ───── DIFFICULTY SCREEN ───── -->
+<div class="screen" id="difficultyScreen">
+  <div class="difficulty-card">
+    <img id="previewThumb" class="preview-thumb" alt="Your face preview">
+    <div class="difficulty-title">Choose your challenge</div>
+    <div class="difficulty-subtitle">More pieces = more puzzle 🧩</div>
+
+    <div class="diff-grid">
+      <button class="diff-btn" onclick="startPuzzle(3)">
+        <div class="diff-size">3×3</div>
+        <div class="diff-label">Easy</div>
+        <div class="diff-pieces">9 pieces</div>
+      </button>
+      <button class="diff-btn" onclick="startPuzzle(4)">
+        <div class="diff-size">4×4</div>
+        <div class="diff-label">Medium</div>
+        <div class="diff-pieces">16 pieces</div>
+      </button>
+      <button class="diff-btn" onclick="startPuzzle(5)">
+        <div class="diff-size">5×5</div>
+        <div class="diff-label">Hard</div>
+        <div class="diff-pieces">25 pieces</div>
+      </button>
+    </div>
+
+    <button class="btn btn-rose" onclick="goToCamera()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      Retake Photo
+    </button>
+  </div>
+</div>
+
+<!-- ───── PUZZLE SCREEN ───── -->
+<div class="screen" id="puzzleScreen">
+  <div class="puzzle-topbar">
+    <div class="stats-row">
+      <div class="stat-chip timer-chip">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <span class="stat-val" id="timerDisplay">00:00.0</span>
+      </div>
+      <div class="stat-chip">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9l4 4 4-4 4 4"/><path d="M3 12h18"/></svg>
+        <span class="stat-val" id="movesDisplay">0</span> moves
+      </div>
+      <div class="stat-chip correct-chip">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        <span class="stat-val" id="correctDisplay">0</span>/<span class="stat-val" id="totalDisplay">9</span>
+      </div>
+    </div>
+    <div class="puzzle-actions">
+      <button class="btn btn-secondary" id="shuffleAgainBtn" onclick="reshufflePuzzle()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+        Shuffle
+      </button>
+      <button class="btn btn-secondary" onclick="goToDifficulty()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        Back
+      </button>
+    </div>
+  </div>
+
+  <div class="progress-bar-wrap" style="width:100%; max-width:600px;">
+    <div class="progress-bar-fill" id="progressFill" style="width:0%"></div>
+  </div>
+
+  <div id="puzzleBoard"></div>
+</div>
+
+<!-- ───── WIN OVERLAY ───── -->
+<div id="winOverlay">
+  <div class="win-card">
+    <div class="win-emoji">🎉</div>
+    <div class="win-title">Puzzle Solved!</div>
+
+    <div class="win-stats">
+      <div class="win-stat">
+        <div class="win-stat-label">Time</div>
+        <div class="win-stat-val" id="winTime">—</div>
+      </div>
+      <div class="win-stat">
+        <div class="win-stat-label">Moves</div>
+        <div class="win-stat-val" id="winMoves">—</div>
+      </div>
+      <div class="win-stat">
+        <div class="win-stat-label">Grid</div>
+        <div class="win-stat-val" id="winDiff">—</div>
+      </div>
+    </div>
+
+    <div class="win-actions">
+      <button class="btn btn-primary" onclick="playAgain()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.47"/></svg>
+        Play Again
+      </button>
+      <button class="btn btn-amber" onclick="chooseDifficulty()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        New Difficulty
+      </button>
+      <button class="btn btn-secondary" onclick="goToCamera()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        New Photo
+      </button>
+    </div>
+
+    <div class="leaderboard" id="leaderboard">
+      <div class="lb-title">Best Times</div>
+      <div id="lbContent" class="lb-empty">No times saved yet.</div>
+    </div>
+  </div>
+</div>
+
+<!-- Confetti -->
+<canvas id="confettiCanvas"></canvas>
+
+<script>
+/* ═══════════════════════════════════════════════════════
+   STATE
+═══════════════════════════════════════════════════════ */
+const state = {
+  stream: null,
+  imageDataUrl: null,
+  gridSize: 3,
+  pieces: [],          // { id, correctIndex, currentCell }
+  cellMap: [],         // cellMap[cellIndex] = pieceId
+  timerStart: null,
+  timerRAF: null,
+  elapsedMs: 0,
+  moves: 0,
+  totalPieces: 0,
+  correctCount: 0,
+  puzzleActive: false,
+  boardSize: 0,
+  pieceSize: 0,
+};
+
+/* ═══════════════════════════════════════════════════════
+   CAMERA
+═══════════════════════════════════════════════════════ */
+async function initCamera() {
+  const video = document.getElementById('videoEl');
+  const errEl = document.getElementById('cameraError');
+
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    showCameraError();
+    return;
+  }
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 960 } },
+      audio: false
+    });
+    state.stream = stream;
+    video.srcObject = stream;
+    video.style.display = 'block';
+    errEl.style.display = 'none';
+    drawGridOverlay();
+  } catch (e) {
+    showCameraError();
+  }
+}
+
+function showCameraError() {
+  document.getElementById('videoEl').style.display = 'none';
+  document.getElementById('cameraError').style.display = 'flex';
+  document.getElementById('takePhotoBtn').disabled = true;
+}
+
+function drawGridOverlay() {
+  const svg = document.getElementById('gridOverlay');
+  const W = 480, H = 360;
+  const lines = [];
+  for (let i = 1; i < 3; i++) {
+    lines.push(`<line x1="${W * i / 3}" y1="0" x2="${W * i / 3}" y2="${H}"/>`);
+    lines.push(`<line x1="0" y1="${H * i / 3}" x2="${W}" y2="${H * i / 3}"/>`);
+  }
+  svg.innerHTML = lines.join('');
+}
+
+function stopCamera() {
+  if (state.stream) {
+    state.stream.getTracks().forEach(t => t.stop());
+    state.stream = null;
+  }
+}
+
+function takePhoto() {
+  const video = document.getElementById('videoEl');
+  if (!video.srcObject) return;
+
+  const canvas = document.getElementById('snapCanvas');
+  const size = Math.min(video.videoWidth, video.videoHeight);
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  ctx.save();
+  ctx.translate(size, 0);
+  ctx.scale(-1, 1);
+  const offX = (video.videoWidth - size) / 2;
+  const offY = (video.videoHeight - size) / 2;
+  ctx.drawImage(video, offX, offY, size, size, 0, 0, size, size);
+  ctx.restore();
+
+  state.imageDataUrl = canvas.toDataURL('image/jpeg', 0.92);
+  goDifficulty();
+}
+
+function triggerUpload() {
+  document.getElementById('fileInput').click();
+}
+
+function handleFileUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.getElementById('snapCanvas');
+      const size = Math.min(img.width, img.height);
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      const offX = (img.width - size) / 2;
+      const offY = (img.height - size) / 2;
+      ctx.drawImage(img, offX, offY, size, size, 0, 0, size, size);
+      state.imageDataUrl = canvas.toDataURL('image/jpeg', 0.92);
+      goDifficulty();
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+  e.target.value = '';
+}
+
+/* ═══════════════════════════════════════════════════════
+   SCREEN TRANSITIONS
+═══════════════════════════════════════════════════════ */
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function goToCamera() {
+  closeWin();
+  stopTimer();
+  showScreen('cameraScreen');
+  document.getElementById('headerNewPhoto').style.display = 'none';
+  initCamera();
+}
+
+function goDifficulty() {
+  showScreen('difficultyScreen');
+  document.getElementById('previewThumb').src = state.imageDataUrl;
+  document.getElementById('headerNewPhoto').style.display = 'inline-flex';
+  stopCamera();
+}
+
+function goToDifficulty() {
+  closeWin();
+  stopTimer();
+  showScreen('difficultyScreen');
+}
+
+function chooseDifficulty() {
+  closeWin();
+  stopTimer();
+  showScreen('difficultyScreen');
+}
+
+/* ═══════════════════════════════════════════════════════
+   PUZZLE GENERATION
+═══════════════════════════════════════════════════════ */
+function startPuzzle(gridSize) {
+  state.gridSize = gridSize;
+  state.totalPieces = gridSize * gridSize;
+  state.moves = 0;
+  state.correctCount = 0;
+  state.elapsedMs = 0;
+  state.puzzleActive = false;
+
+  showScreen('puzzleScreen');
+  document.getElementById('headerNewPhoto').style.display = 'inline-flex';
+  document.getElementById('totalDisplay').textContent = state.totalPieces;
+  document.getElementById('movesDisplay').textContent = '0';
+  document.getElementById('correctDisplay').textContent = '0';
+  document.getElementById('timerDisplay').textContent = '00:00.0';
+  document.getElementById('progressFill').style.width = '0%';
+
+  buildBoard();
+}
+
+function buildBoard() {
+  const board = document.getElementById('puzzleBoard');
+  board.innerHTML = '';
+
+  const vw = Math.min(window.innerWidth - 40, 580);
+  const vh = window.innerHeight * 0.62;
+  const boardSize = Math.floor(Math.min(vw, vh) / state.gridSize) * state.gridSize;
+  const pieceSize = boardSize / state.gridSize;
+
+  state.boardSize = boardSize;
+  state.pieceSize = pieceSize;
+
+  board.style.width = boardSize + 'px';
+  board.style.height = boardSize + 'px';
+  board.style.gridTemplateColumns = `repeat(${state.gridSize}, ${pieceSize}px)`;
+  board.style.gridTemplateRows    = `repeat(${state.gridSize}, ${pieceSize}px)`;
+
+  const cells = [];
+  for (let i = 0; i < state.totalPieces; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'puzzle-cell';
+    cell.dataset.cellIndex = i;
+    cell.style.width = pieceSize + 'px';
+    cell.style.height = pieceSize + 'px';
+    board.appendChild(cell);
+    cells.push(cell);
+  }
+
+  const indices = generateSolvablePermutation(state.totalPieces);
+  state.pieces = [];
+  state.cellMap = new Array(state.totalPieces).fill(null);
+
+  for (let i = 0; i < state.totalPieces; i++) {
+    const correctIndex = i;
+    const startCell = indices[i];
+    const col = correctIndex % state.gridSize;
+    const row = Math.floor(correctIndex / state.gridSize);
+
+    const bgX = -(col * pieceSize);
+    const bgY = -(row * pieceSize);
+
+    const piece = document.createElement('div');
+    piece.className = 'puzzle-piece';
+    piece.dataset.pieceId = i;
+    piece.dataset.correctIndex = i;
+    piece.style.backgroundImage = `url(${state.imageDataUrl})`;
+    piece.style.backgroundSize = `${boardSize}px ${boardSize}px`;
+    piece.style.backgroundPosition = `${bgX}px ${bgY}px`;
+
+    if (state.gridSize <= 4) {
+      const num = document.createElement('div');
+      num.className = 'piece-number';
+      num.textContent = i + 1;
+      piece.appendChild(num);
+    }
+
+    cells[startCell].appendChild(piece);
+    state.pieces.push({ id: i, correctIndex: i, currentCell: startCell });
+    state.cellMap[startCell] = i;
+
+    initDrag(piece);
+  }
+
+  updateCorrectness();
+  startTimer();
+  state.puzzleActive = true;
+}
+
+function generateSolvablePermutation(n) {
+  let perm = Array.from({ length: n }, (_, i) => i);
+  do { shuffle(perm); } while (!isSolvable(perm, Math.round(Math.sqrt(n))));
+  while (isIdentity(perm)) { shuffle(perm); }
+  return perm;
+}
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+}
+
+function isIdentity(arr) {
+  return arr.every((v, i) => v === i);
+}
+
+function isSolvable(perm, gridW) {
+  let inversions = 0;
+  for (let i = 0; i < perm.length; i++) {
+    for (let j = i + 1; j < perm.length; j++) {
+      if (perm[i] > perm[j]) inversions++;
+    }
+  }
+  if (gridW % 2 === 1) return inversions % 2 === 0;
+  return true;
+}
+
+function reshufflePuzzle() {
+  stopTimer();
+  state.moves = 0;
+  state.elapsedMs = 0;
+  document.getElementById('movesDisplay').textContent = '0';
+  document.getElementById('timerDisplay').textContent = '00:00.0';
+  buildBoard();
+}
+
+/* ═══════════════════════════════════════════════════════
+   DRAG & DROP (Mouse + Touch)
+═══════════════════════════════════════════════════════ */
+let dragState = null;
+
+function initDrag(piece) {
+  piece.addEventListener('mousedown', onDragStart, { passive: false });
+  piece.addEventListener('touchstart', onDragStart, { passive: false });
+}
+
+function onDragStart(e) {
+  if (!state.puzzleActive) return;
+  e.preventDefault();
+
+  const piece = e.currentTarget;
+  const pieceId = parseInt(piece.dataset.pieceId);
+  const board = document.getElementById('puzzleBoard');
+  const boardRect = board.getBoundingClientRect();
+  const pieceSize = state.pieceSize;
+
+  const clientPos = e.touches ? e.touches[0] : e;
+  const startX = clientPos.clientX;
+  const startY = clientPos.clientY;
+
+  const pieceData = state.pieces[pieceId];
+  const fromCell = pieceData.currentCell;
+  const fromCol = fromCell % state.gridSize;
+  const fromRow = Math.floor(fromCell / state.gridSize);
+
+  const pieceAbsX = boardRect.left + fromCol * pieceSize;
+  const pieceAbsY = boardRect.top  + fromRow * pieceSize;
+
+  const offsetX = startX - pieceAbsX;
+  const offsetY = startY - pieceAbsY;
+
+  piece.classList.add('dragging');
+  piece.style.position = 'fixed';
+  piece.style.width = pieceSize + 'px';
+  piece.style.height = pieceSize + 'px';
+  piece.style.left = (startX - offsetX) + 'px';
+  piece.style.top  = (startY - offsetY) + 'px';
+  piece.style.zIndex = '200';
+  document.body.appendChild(piece);
+
+  dragState = { piece, pieceId, fromCell, offsetX, offsetY, boardRect, pieceSize };
+
+  if (e.type === 'mousedown') {
+    document.addEventListener('mousemove', onDragMove, { passive: false });
+    document.addEventListener('mouseup', onDragEnd, { passive: false });
+  } else {
+    document.addEventListener('touchmove', onDragMove, { passive: false });
+    document.addEventListener('touchend', onDragEnd, { passive: false });
+    document.addEventListener('touchcancel', onDragEnd, { passive: false });
+  }
+}
+
+function onDragMove(e) {
+  if (!dragState) return;
+  e.preventDefault();
+
+  const clientPos = e.touches ? e.touches[0] : e;
+  const { piece, offsetX, offsetY } = dragState;
+
+  piece.style.left = (clientPos.clientX - offsetX) + 'px';
+  piece.style.top  = (clientPos.clientY - offsetY) + 'px';
+}
+
+function onDragEnd(e) {
+  if (!dragState) return;
+  e.preventDefault();
+
+  const { piece, pieceId, fromCell, offsetX, offsetY } = dragState;
+  const clientPos = (e.changedTouches ? e.changedTouches[0] : e);
+
+  const board = document.getElementById('puzzleBoard');
+  const boardRect = board.getBoundingClientRect();
+  const pieceSize = state.pieceSize;
+
+  const relX = clientPos.clientX - boardRect.left;
+  const relY = clientPos.clientY - boardRect.top;
+
+  const toCol = Math.floor(relX / pieceSize);
+  const toRow = Math.floor(relY / pieceSize);
+
+  piece.classList.remove('dragging');
+  piece.style.position = '';
+  piece.style.width = '';
+  piece.style.height = '';
+  piece.style.left = '';
+  piece.style.top = '';
+  piece.style.zIndex = '';
+
+  const inBounds = toCol >= 0 && toCol < state.gridSize && toRow >= 0 && toRow < state.gridSize;
+
+  if (inBounds) {
+    const toCell = toRow * state.gridSize + toCol;
+    if (toCell !== fromCell) {
+      swapPieces(pieceId, fromCell, toCell);
+      state.moves++;
+      document.getElementById('movesDisplay').textContent = state.moves;
+    } else {
+      reinstallPiece(piece, fromCell);
+    }
+  } else {
+    reinstallPiece(piece, fromCell);
+  }
+
+  dragState = null;
+  document.removeEventListener('mousemove', onDragMove);
+  document.removeEventListener('mouseup', onDragEnd);
+  document.removeEventListener('touchmove', onDragMove);
+  document.removeEventListener('touchend', onDragEnd);
+  document.removeEventListener('touchcancel', onDragEnd);
+}
+
+function reinstallPiece(piece, cellIndex) {
+  const cells = document.querySelectorAll('.puzzle-cell');
+  cells[cellIndex].appendChild(piece);
+  piece.style.position = '';
+}
+
+function swapPieces(movingPieceId, fromCell, toCell) {
+  const cells = document.querySelectorAll('.puzzle-cell');
+  const occupantId = state.cellMap[toCell];
+
+  if (occupantId !== null) {
+    const occupantPiece = document.querySelector(`[data-piece-id="${occupantId}"]`);
+    cells[fromCell].appendChild(occupantPiece);
+    state.pieces[occupantId].currentCell = fromCell;
+    state.cellMap[fromCell] = occupantId;
+  } else {
+    state.cellMap[fromCell] = null;
+  }
+
+  const movingPiece = document.querySelector(`[data-piece-id="${movingPieceId}"]`);
+  cells[toCell].appendChild(movingPiece);
+  state.pieces[movingPieceId].currentCell = toCell;
+  state.cellMap[toCell] = movingPieceId;
+
+  updateCorrectness();
+}
+
+/* ═══════════════════════════════════════════════════════
+   CORRECTNESS
+═══════════════════════════════════════════════════════ */
+function updateCorrectness() {
+  let correct = 0;
+  for (const p of state.pieces) {
+    const el = document.querySelector(`[data-piece-id="${p.id}"]`);
+    if (!el) continue;
+    if (p.currentCell === p.correctIndex) {
+      el.classList.add('correct');
+      correct++;
+    } else {
+      el.classList.remove('correct');
+    }
+  }
+  state.correctCount = correct;
+  document.getElementById('correctDisplay').textContent = correct;
+  document.getElementById('progressFill').style.width =
+    ((correct / state.totalPieces) * 100) + '%';
+
+  if (correct === state.totalPieces && state.puzzleActive) {
+    onWin();
+  }
+}
+
+/* ═══════════════════════════════════════════════════════
+   TIMER
+═══════════════════════════════════════════════════════ */
+function startTimer() {
+  stopTimer();
+  state.timerStart = performance.now();
+  function tick() {
+    const elapsed = performance.now() - state.timerStart + state.elapsedMs;
+    document.getElementById('timerDisplay').textContent = formatTime(elapsed);
+    state.timerRAF = requestAnimationFrame(tick);
+  }
+  state.timerRAF = requestAnimationFrame(tick);
+}
+
+function stopTimer() {
+  if (state.timerRAF) {
+    cancelAnimationFrame(state.timerRAF);
+    state.timerRAF = null;
+  }
+  if (state.timerStart !== null) {
+    state.elapsedMs += performance.now() - state.timerStart;
+    state.timerStart = null;
+  }
+}
+
+function formatTime(ms) {
+  const totalSec = Math.floor(ms / 1000);
+  const min = Math.floor(totalSec / 60).toString().padStart(2, '0');
+  const sec = (totalSec % 60).toString().padStart(2, '0');
+  const tenth = Math.floor((ms % 1000) / 100);
+  return `${min}:${sec}.${tenth}`;
+}
+
+/* ═══════════════════════════════════════════════════════
+   WIN
+═══════════════════════════════════════════════════════ */
+function onWin() {
+  stopTimer();
+  state.puzzleActive = false;
+
+  const timeStr = formatTime(state.elapsedMs);
+  document.getElementById('winTime').textContent = timeStr;
+  document.getElementById('winMoves').textContent = state.moves;
+  document.getElementById('winDiff').textContent = `${state.gridSize}×${state.gridSize}`;
+
+  saveScore(timeStr, state.moves, state.gridSize, state.elapsedMs);
+  renderLeaderboard();
+
+  document.getElementById('winOverlay').classList.add('show');
+  launchConfetti();
+}
+
+function closeWin() {
+  document.getElementById('winOverlay').classList.remove('show');
+  stopConfetti();
+}
+
+function playAgain() {
+  closeWin();
+  reshufflePuzzle();
+}
+
+/* ═══════════════════════════════════════════════════════
+   LEADERBOARD / LOCAL STORAGE
+═══════════════════════════════════════════════════════ */
+const LS_KEY = 'facePuzzle_scores_v2';
+
+function loadScores() {
+  try {
+    return JSON.parse(localStorage.getItem(LS_KEY)) || [];
+  } catch { return []; }
+}
+
+function saveScore(timeStr, moves, grid, elapsedMs) {
+  const scores = loadScores();
+  const entry = {
+    timeStr,
+    elapsedMs,
+    moves,
+    grid: `${grid}×${grid}`,
+    date: new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: '2-digit' })
+  };
+  scores.push(entry);
+  scores.sort((a, b) => a.elapsedMs - b.elapsedMs);
+  const top5 = scores.slice(0, 5);
+  try { localStorage.setItem(LS_KEY, JSON.stringify(top5)); } catch {}
+}
+
+function renderLeaderboard() {
+  const scores = loadScores();
+  const el = document.getElementById('lbContent');
+  if (!scores.length) {
+    el.innerHTML = '<div class="lb-empty">No times saved yet.</div>';
+    return;
+  }
+  const medals = ['🥇', '🥈', '🥉', '4', '5'];
+  el.innerHTML = scores.map((s, i) => `
+    <div class="lb-row">
+      <div class="lb-rank">${medals[i] || (i + 1)}</div>
+      <div class="lb-date">${s.date}</div>
+      <div class="lb-time">${s.timeStr}</div>
+      <div class="lb-moves">${s.moves} mv</div>
+      <div class="lb-diff">${s.grid}</div>
+    </div>
+  `).join('');
+}
+
+/* ═══════════════════════════════════════════════════════
+   CONFETTI
+═══════════════════════════════════════════════════════ */
+let confettiRAF = null;
+let confettiParticles = [];
+
+function launchConfetti() {
+  const canvas = document.getElementById('confettiCanvas');
+  canvas.style.display = 'block';
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  const ctx = canvas.getContext('2d');
+  const colors = ['#7C3AED','#A78BFA','#F59E0B','#F43F5E','#10B981','#60A5FA','#FBBF24'];
+
+  confettiParticles = Array.from({ length: 120 }, () => ({
+    x: Math.random() * canvas.width,
+    y: -10 - Math.random() * 200,
+    r: 4 + Math.random() * 7,
+    color: colors[Math.floor(Math.random() * colors.length)],
+    vx: (Math.random() - 0.5) * 4,
+    vy: 2 + Math.random() * 4,
+    rot: Math.random() * Math.PI * 2,
+    rotV: (Math.random() - 0.5) * 0.2,
+    shape: Math.random() > 0.5 ? 'rect' : 'circle',
+  }));
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    let alive = false;
+    for (const p of confettiParticles) {
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vy += 0.06;
+      p.rot += p.rotV;
+      if (p.y < canvas.height + 20) alive = true;
+
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot);
+      ctx.fillStyle = p.color;
+      if (p.shape === 'rect') {
+        ctx.fillRect(-p.r / 2, -p.r / 2, p.r, p.r * 0.6);
+      } else {
+        ctx.beginPath();
+        ctx.arc(0, 0, p.r / 2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+    if (alive) confettiRAF = requestAnimationFrame(draw);
+    else stopConfetti();
+  }
+  if (confettiRAF) cancelAnimationFrame(confettiRAF);
+  confettiRAF = requestAnimationFrame(draw);
+}
+
+function stopConfetti() {
+  if (confettiRAF) {
+    cancelAnimationFrame(confettiRAF);
+    confettiRAF = null;
+  }
+  const canvas = document.getElementById('confettiCanvas');
+  canvas.style.display = 'none';
+  canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+}
+
+/* ═══════════════════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════════════════ */
+window.addEventListener('DOMContentLoaded', () => {
+  initCamera();
+  renderLeaderboard();
+});
+
+window.addEventListener('resize', () => {
+  const confCanvas = document.getElementById('confettiCanvas');
+  if (confCanvas.style.display !== 'none') {
+    confCanvas.width = window.innerWidth;
+    confCanvas.height = window.innerHeight;
+  }
+});
+</script>
+</body>
+</html>
