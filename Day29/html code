@@ -1,0 +1,1170 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Operation Lifeline: Supply Chain Crisis Lab</title>
+<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+  :root{
+    --bg-0:#0a0e17;
+    --bg-1:#0f1420;
+    --bg-2:#151b2b;
+    --bg-3:#1c2437;
+    --border:#2a3350;
+    --text-0:#eef1fa;
+    --text-1:#b7c0d8;
+    --text-2:#7c88a8;
+    --accent:#4f8cff;
+    --accent-2:#7c5cff;
+    --green:#33d69f;
+    --yellow:#ffc93c;
+    --red:#ff5c72;
+    --shadow: 0 10px 30px rgba(0,0,0,0.35);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background: radial-gradient(1200px 800px at 10% -10%, #1a2340 0%, transparent 60%),
+                radial-gradient(1000px 700px at 110% 10%, #201a40 0%, transparent 55%),
+                var(--bg-0);
+    color:var(--text-0);
+    font-family:'Segoe UI', Roboto, -apple-system, BlinkMacSystemFont, sans-serif;
+    min-height:100vh;
+  }
+  #root{min-height:100vh;}
+  .app-shell{
+    max-width:1100px;
+    margin:0 auto;
+    padding:28px 20px 80px;
+  }
+  h1,h2,h3,h4{margin:0 0 8px 0; font-weight:700; letter-spacing:-0.01em;}
+  p{line-height:1.55; color:var(--text-1);}
+  .topbar{
+    display:flex; justify-content:space-between; align-items:center;
+    margin-bottom:28px; padding-bottom:14px; border-bottom:1px solid var(--border);
+  }
+  .brand{display:flex; align-items:center; gap:10px; font-weight:800; font-size:15px; letter-spacing:0.02em; color:var(--text-0);}
+  .brand-dot{width:10px;height:10px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent-2)); box-shadow:0 0 12px var(--accent);}
+  .stage-pill{
+    font-size:12px; padding:6px 12px; border-radius:999px;
+    background:var(--bg-2); border:1px solid var(--border); color:var(--text-2);
+  }
+  .card{
+    background:linear-gradient(180deg, var(--bg-2), var(--bg-1));
+    border:1px solid var(--border);
+    border-radius:16px;
+    padding:22px;
+    box-shadow:var(--shadow);
+    transition: transform .2s ease, border-color .2s ease;
+  }
+  .card:hover{ border-color:#3a4568; }
+  .grid{ display:grid; gap:16px; }
+  .grid-2{ grid-template-columns:repeat(auto-fit, minmax(230px,1fr)); }
+  .grid-3{ grid-template-columns:repeat(auto-fit, minmax(180px,1fr)); }
+  .stat-card{
+    background:var(--bg-3);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:16px 18px;
+    transition: transform .18s ease, box-shadow .18s ease;
+  }
+  .stat-card:hover{ transform:translateY(-3px); box-shadow:0 8px 22px rgba(79,140,255,0.15); }
+  .stat-label{ font-size:11px; text-transform:uppercase; letter-spacing:0.08em; color:var(--text-2); margin-bottom:6px; }
+  .stat-value{ font-size:22px; font-weight:800; color:var(--text-0); }
+  .badge{
+    display:inline-block; padding:4px 10px; border-radius:999px; font-size:11px; font-weight:700;
+    text-transform:uppercase; letter-spacing:0.05em;
+  }
+  .badge-red{ background:rgba(255,92,114,0.15); color:var(--red); border:1px solid rgba(255,92,114,0.4); }
+  .badge-yellow{ background:rgba(255,201,60,0.15); color:var(--yellow); border:1px solid rgba(255,201,60,0.4); }
+  .badge-green{ background:rgba(51,214,159,0.15); color:var(--green); border:1px solid rgba(51,214,159,0.4); }
+  .badge-blue{ background:rgba(79,140,255,0.15); color:var(--accent); border:1px solid rgba(79,140,255,0.4); }
+
+  .btn{
+    cursor:pointer;
+    border:none;
+    border-radius:12px;
+    padding:13px 22px;
+    font-size:14.5px;
+    font-weight:700;
+    font-family:inherit;
+    transition: transform .15s ease, box-shadow .15s ease, opacity .15s ease;
+    color:#fff;
+    background:linear-gradient(135deg, var(--accent), var(--accent-2));
+    box-shadow:0 6px 18px rgba(79,140,255,0.3);
+  }
+  .btn:hover{ transform:translateY(-2px); box-shadow:0 10px 24px rgba(79,140,255,0.45); }
+  .btn:active{ transform:translateY(0px); }
+  .btn:disabled{ opacity:0.35; cursor:not-allowed; transform:none; box-shadow:none; }
+  .btn-secondary{
+    background:var(--bg-3); color:var(--text-0); border:1px solid var(--border); box-shadow:none;
+  }
+  .btn-secondary:hover{ border-color:var(--accent); box-shadow:0 6px 16px rgba(79,140,255,0.15); }
+  .btn-ghost{
+    background:transparent; color:var(--text-2); border:1px solid var(--border); box-shadow:none;
+  }
+
+  .option-card{
+    background:var(--bg-3);
+    border:1.5px solid var(--border);
+    border-radius:14px;
+    padding:18px;
+    cursor:pointer;
+    transition: all .18s ease;
+    text-align:left;
+  }
+  .option-card:hover{ border-color:var(--accent); transform:translateY(-2px); box-shadow:0 8px 20px rgba(79,140,255,0.15); }
+  .option-card.selected{ border-color:var(--green); background:rgba(51,214,159,0.08); box-shadow:0 0 0 1px var(--green) inset; }
+  .option-card.disabled-look{ opacity:0.45; cursor:not-allowed; }
+  .option-title{ font-weight:700; font-size:15px; margin-bottom:6px; color:var(--text-0); }
+  .option-desc{ font-size:13px; color:var(--text-2); margin:0; }
+
+  .bar-row{ margin-bottom:16px; }
+  .bar-top{ display:flex; justify-content:space-between; font-size:13px; margin-bottom:6px; color:var(--text-1); }
+  .bar-track{
+    width:100%; height:12px; background:var(--bg-1); border-radius:999px; overflow:hidden; border:1px solid var(--border);
+  }
+  .bar-fill{
+    height:100%; border-radius:999px;
+    transition: width 1s cubic-bezier(.22,.9,.35,1);
+    background:linear-gradient(90deg, var(--accent), var(--accent-2));
+  }
+  .bar-fill.green{ background:linear-gradient(90deg, #1fbf87, var(--green)); }
+  .bar-fill.red{ background:linear-gradient(90deg, #d9445c, var(--red)); }
+  .bar-fill.yellow{ background:linear-gradient(90deg, #d99e1e, var(--yellow)); }
+
+  .why-box{
+    margin-top:10px;
+    background:rgba(79,140,255,0.08);
+    border:1px dashed rgba(79,140,255,0.4);
+    border-radius:10px;
+    padding:12px 14px;
+    font-size:13px;
+    color:var(--text-1);
+  }
+  .why-box b{ color:var(--accent); }
+
+  .section-title{
+    display:flex; align-items:baseline; gap:10px; margin-bottom:4px;
+  }
+  .section-title .step-num{
+    font-size:12px; color:var(--text-2); font-weight:700; letter-spacing:0.08em;
+  }
+  .footer-actions{
+    display:flex; justify-content:space-between; margin-top:26px; gap:12px; flex-wrap:wrap;
+  }
+  .fade-in{ animation: fadeIn .5s ease; }
+  @keyframes fadeIn{ from{ opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);} }
+
+  .welcome-wrap{
+    min-height:80vh; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;
+    gap:18px;
+  }
+  .welcome-title{
+    font-size:44px; font-weight:900; letter-spacing:-0.02em;
+    background:linear-gradient(135deg, #fff, #9fb4ff);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  .welcome-sub{ font-size:16px; color:var(--text-1); max-width:620px; }
+  .feature-chips{ display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin:14px 0 8px; }
+  .chip{
+    background:var(--bg-2); border:1px solid var(--border); border-radius:999px; padding:8px 14px; font-size:12.5px; color:var(--text-1);
+  }
+
+  .progress-steps{ display:flex; gap:6px; margin-bottom:24px; flex-wrap:wrap; }
+  .progress-steps .dotstep{
+    flex:1; min-width:40px; height:6px; border-radius:999px; background:var(--bg-3); border:1px solid var(--border);
+  }
+  .progress-steps .dotstep.active{ background:linear-gradient(90deg, var(--accent), var(--accent-2)); border-color:transparent; }
+  .progress-steps .dotstep.done{ background:var(--green); border-color:transparent; }
+
+  .round-tag{
+    display:inline-block; background:var(--bg-3); border:1px solid var(--border); border-radius:8px; padding:4px 10px; font-size:12px; color:var(--text-2); margin-bottom:10px;
+  }
+  .score-big{
+    font-size:64px; font-weight:900; text-align:center;
+    background:linear-gradient(135deg, var(--accent), var(--green));
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  .score-ring-wrap{ display:flex; justify-content:center; margin:10px 0 20px; }
+  .list-clean{ margin:0; padding-left:18px; color:var(--text-1); }
+  .list-clean li{ margin-bottom:8px; }
+  .divider{ height:1px; background:var(--border); margin:20px 0; }
+  ::selection{ background:rgba(79,140,255,0.35); }
+  @media (max-width:600px){
+    .welcome-title{ font-size:32px; }
+    .score-big{ font-size:48px; }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect, useMemo, useRef } = React;
+
+/* ---------------------------------------------------------
+   RANDOM DATA POOLS
+--------------------------------------------------------- */
+const INDUSTRIES = [
+  "Consumer Electronics", "Automotive Parts", "Pharmaceuticals", "Apparel & Textiles",
+  "Food & Beverage", "Industrial Machinery", "Furniture", "Toys & Games", "Medical Devices", "Renewable Energy Components"
+];
+const COMPANY_PREFIXES = ["Nova", "Atlas", "Vertex", "Solace", "Halcyon", "Meridian", "Ironclad", "Brightline", "Cobalt", "Summit", "Lumen", "Orion"];
+const COMPANY_SUFFIXES = ["Industries", "Global", "Manufacturing Co.", "Group", "Holdings", "Dynamics", "Corp", "Works", "& Partners", "Logistics"];
+const COUNTRIES = [
+  ["Vietnam", "Germany", "USA"], ["China", "Mexico", "Poland"], ["India", "Brazil", "Netherlands"],
+  ["Bangladesh", "Turkey", "Spain"], ["Malaysia", "South Korea", "Canada"], ["Indonesia", "Italy", "USA"]
+];
+
+function randInt(min, max){ return Math.floor(Math.random() * (max - min + 1)) + min; }
+function randFloat(min, max, dp=1){ return Number((Math.random() * (max - min) + min).toFixed(dp)); }
+function pick(arr){ return arr[randInt(0, arr.length - 1)]; }
+function clamp(v, min=0, max=100){ return Math.max(min, Math.min(max, v)); }
+
+function generateCompany(){
+  const name = `${pick(COMPANY_PREFIXES)} ${pick(COMPANY_SUFFIXES)}`;
+  const industry = pick(INDUSTRIES);
+  const revenue = randInt(80, 950); // millions
+  const factories = randInt(2, 9);
+  const warehouses = randInt(3, 14);
+  const suppliers = randInt(8, 40);
+  const inventoryDays = randInt(12, 60);
+  const leadTime = randInt(7, 45);
+  const countries = pick(COUNTRIES);
+  return { name, industry, revenue, factories, warehouses, suppliers, inventoryDays, leadTime, countries };
+}
+
+const CRISES = [
+  {
+    type: "Factory Fire",
+    icon: "🔥",
+    urgency: "Critical",
+    description: "A fire has severely damaged your largest manufacturing plant, halting output overnight.",
+    impact: "Production capacity drops sharply and delivery promises are at immediate risk."
+  },
+  {
+    type: "Supplier Bankruptcy",
+    icon: "📉",
+    urgency: "High",
+    description: "Your key raw-material supplier has filed for bankruptcy with no warning.",
+    impact: "Material inflow could stop within days unless alternatives are secured."
+  },
+  {
+    type: "Port Strike",
+    icon: "🚢",
+    urgency: "High",
+    description: "Dockworkers at your primary export port have walked out indefinitely.",
+    impact: "Outbound shipments are stuck, threatening customer delivery windows worldwide."
+  },
+  {
+    type: "Cyberattack",
+    icon: "💻",
+    urgency: "Critical",
+    description: "Ransomware has locked your warehouse management and order systems.",
+    impact: "Visibility into inventory and orders is lost, risking shipment chaos and data loss."
+  },
+  {
+    type: "Flood",
+    icon: "🌊",
+    urgency: "High",
+    description: "Severe flooding has cut off road access to two regional warehouses.",
+    impact: "Inventory is stranded and regional fulfillment is paused."
+  },
+  {
+    type: "Raw Material Shortage",
+    icon: "⛏️",
+    urgency: "Medium",
+    description: "A global shortage of a key raw material is driving prices up fast.",
+    impact: "Production costs are rising and some product lines may need to be rationed."
+  },
+  {
+    type: "Political Conflict",
+    icon: "⚠️",
+    urgency: "Critical",
+    description: "Escalating conflict in a key sourcing region threatens trade routes and factories.",
+    impact: "Long-term sourcing strategy and near-term shipments are both at risk."
+  },
+  {
+    type: "Shipping Delay",
+    icon: "⏱️",
+    urgency: "Medium",
+    description: "Global freight congestion has tripled average transit times this quarter.",
+    impact: "Customer delivery dates are slipping and warehousing costs are climbing."
+  }
+];
+
+function generateCrisis(){
+  return pick(CRISES);
+}
+
+/* ---------------------------------------------------------
+   WAR ROOM ACTIONS
+   Each action has effects on: cost, inventory, profit, deliverySpeed, satisfaction
+   Positive = good, values are deltas
+--------------------------------------------------------- */
+const WAR_ROOM_ACTIONS = [
+  {
+    id: "airfreight",
+    title: "Switch to Air Freight",
+    desc: "Rush critical shipments by air instead of sea to protect delivery timelines.",
+    why: "Air freight is fast but expensive — it protects customer trust at the cost of margin.",
+    effects: { cost: -14, inventory: 4, profit: -10, deliverySpeed: 18, satisfaction: 12 }
+  },
+  {
+    id: "alt_suppliers",
+    title: "Activate Backup Suppliers",
+    desc: "Pull in pre-vetted secondary suppliers to fill the material gap.",
+    why: "Diversifying supply reduces dependency risk, though backup suppliers often cost more initially.",
+    effects: { cost: -8, inventory: 10, profit: -4, deliverySpeed: 6, satisfaction: 5 }
+  },
+  {
+    id: "reallocate_inventory",
+    title: "Reallocate Regional Inventory",
+    desc: "Move stock from lower-priority regions to cover the most urgent customer commitments.",
+    why: "This buys time without new spending, but risks under-serving other markets.",
+    effects: { cost: 2, inventory: -6, profit: 3, deliverySpeed: 8, satisfaction: 4 }
+  },
+  {
+    id: "customer_comms",
+    title: "Proactive Customer Communication",
+    desc: "Get ahead of the crisis with transparent updates and revised delivery estimates.",
+    why: "Customers tolerate delays far better when they're informed early — trust is a cushion.",
+    effects: { cost: -2, inventory: 0, profit: -1, deliverySpeed: 0, satisfaction: 16 }
+  },
+  {
+    id: "overtime",
+    title: "Authorize Overtime Production",
+    desc: "Run remaining factories at maximum capacity with paid overtime shifts.",
+    why: "This recovers output fast, but overtime pay and burnout risk quietly erode margin.",
+    effects: { cost: -10, inventory: 12, profit: -6, deliverySpeed: 10, satisfaction: 6 }
+  },
+  {
+    id: "delay_nonessential",
+    title: "Delay Non-Essential Orders",
+    desc: "Push back lower-priority B2B orders to protect flagship customer commitments.",
+    why: "Protects your most valuable relationships, but frustrates the customers left waiting.",
+    effects: { cost: 4, inventory: 3, profit: 5, deliverySpeed: -4, satisfaction: -8 }
+  }
+];
+
+/* ---------------------------------------------------------
+   NEGOTIATION: 4 rounds, branching
+--------------------------------------------------------- */
+const NEGOTIATION_ROUNDS = [
+  {
+    id: 1,
+    prompt: "Opening call: the supplier says costs have risen 20% and they need an immediate price hike.",
+    options: [
+      { id: "a", label: "Accept the increase to preserve the relationship", effects: { trust: 12, price: -14, leadTime: 0 }, why: "Accepting builds goodwill fast, but locks in a worse cost position." },
+      { id: "b", label: "Push back and ask for cost breakdown proof", effects: { trust: -4, price: 6, leadTime: 2 }, why: "Scrutiny can win you a fairer price, but it signals distrust early." },
+      { id: "c", label: "Offer a longer contract in exchange for a smaller increase", effects: { trust: 8, price: 4, leadTime: -2 }, why: "Trading commitment for savings is a classic win-win negotiation move." }
+    ]
+  },
+  {
+    id: 2,
+    prompt: "The supplier hints they could prioritize your orders if you commit to a minimum monthly volume.",
+    options: [
+      { id: "a", label: "Commit to the volume — guarantee priority handling", effects: { trust: 10, price: 6, leadTime: 8 }, why: "Volume commitments often unlock faster lead times and preferential treatment." },
+      { id: "b", label: "Decline — keep sourcing flexible", effects: { trust: -6, price: 0, leadTime: -4 }, why: "Flexibility protects you from lock-in but costs you priority in a crisis." },
+      { id: "c", label: "Propose a smaller trial commitment first", effects: { trust: 4, price: 2, leadTime: 4 }, why: "A trial balances trust-building with limiting your downside risk." }
+    ]
+  },
+  {
+    id: 3,
+    prompt: "Mid-negotiation, the supplier's rep gets defensive about a missed shipment last quarter.",
+    options: [
+      { id: "a", label: "Acknowledge the issue calmly and refocus on solutions", effects: { trust: 9, price: 0, leadTime: 3 }, why: "De-escalating tension keeps the negotiation collaborative rather than adversarial." },
+      { id: "b", label: "Use it as leverage to demand better terms", effects: { trust: -8, price: 8, leadTime: -3 }, why: "Leverage can extract concessions, but damages long-term trust and goodwill." },
+      { id: "c", label: "Ignore it and move on to pricing", effects: { trust: 1, price: 1, leadTime: 0 }, why: "Avoiding the topic is neutral — it neither builds nor breaks the relationship." }
+    ]
+  },
+  {
+    id: 4,
+    prompt: "Final round: the supplier offers a compromise — slightly higher price for guaranteed faster lead times.",
+    options: [
+      { id: "a", label: "Accept the compromise", effects: { trust: 7, price: -6, leadTime: 12 }, why: "Speed often matters more than price during a live crisis — this favors resilience." },
+      { id: "b", label: "Counter with a middle-ground price", effects: { trust: 5, price: 2, leadTime: 6 }, why: "Splitting the difference usually preserves relationship value on both sides." },
+      { id: "c", label: "Hold firm on your original terms", effects: { trust: -5, price: 5, leadTime: -6 }, why: "Holding firm can protect margin, but may cost you the speed you need most." }
+    ]
+  }
+];
+
+/* ---------------------------------------------------------
+   CEO BOARDROOM QUESTIONS
+--------------------------------------------------------- */
+const BOARDROOM_QUESTIONS = [
+  {
+    q: "The board demands an update within the hour. What's your approach?",
+    options: [
+      { label: "Give a clear, honest summary — even with unknowns", score: 10, why: "Transparency under pressure builds long-term board confidence." },
+      { label: "Delay until you have a 'perfect' answer", score: 2, why: "Delaying communication in a crisis usually erodes trust faster than an imperfect update." },
+      { label: "Present only the positive angles", score: 4, why: "Selective framing may feel safe short-term but backfires when the full picture emerges." }
+    ]
+  },
+  {
+    q: "A major customer threatens to cancel their contract over delays. How do you respond?",
+    options: [
+      { label: "Personally call them with a concrete recovery plan", score: 10, why: "Direct executive engagement signals the account truly matters." },
+      { label: "Offer a discount and hope it smooths things over", score: 5, why: "Discounts help short-term but don't address the underlying delivery issue." },
+      { label: "Let the account manager handle it without escalation", score: 3, why: "Under-escalating a major risk can make the customer feel unimportant." }
+    ]
+  },
+  {
+    q: "Your leadership team is split on whether to invest in redundancy now or wait.",
+    options: [
+      { label: "Invest now — resilience is cheaper than repeat crises", score: 10, why: "Proactive resilience investment usually pays for itself over multiple disruptions." },
+      { label: "Wait for more data before committing budget", score: 6, why: "Caution is reasonable, but excessive waiting can leave you exposed to the next shock." },
+      { label: "Reject the idea to protect this quarter's margin", score: 2, why: "Sacrificing resilience for short-term margin often costs far more later." }
+    ]
+  },
+  {
+    q: "An employee flags a risky shortcut being used to hit delivery targets. What do you do?",
+    options: [
+      { label: "Pause and investigate before continuing", score: 10, why: "Protecting safety and quality standards prevents much larger crises down the line." },
+      { label: "Let it continue since targets matter most right now", score: 1, why: "Ignoring risk flags to hit short-term targets is a classic precursor to bigger failures." },
+      { label: "Note it for review after the crisis passes", score: 5, why: "Deferring review is safer than ignoring it, but risk can compound while you wait." }
+    ]
+  },
+  {
+    q: "Media picks up the story and starts asking questions. What's your stance?",
+    options: [
+      { label: "Issue a factual, calm statement with next steps", score: 10, why: "Calm, factual communication is the gold standard for crisis PR." },
+      { label: "Stay silent until the crisis fully resolves", score: 4, why: "Silence often gets filled with speculation, which can be worse than the facts." },
+      { label: "Blame external factors publicly", score: 2, why: "Public blame-shifting tends to damage credibility rather than protect it." }
+    ]
+  }
+];
+
+/* ---------------------------------------------------------
+   AI STRATEGY OPTIONS
+--------------------------------------------------------- */
+const AI_INVESTMENTS = [
+  {
+    id: "forecasting",
+    title: "Demand Forecasting",
+    desc: "AI-driven models predict customer demand shifts weeks in advance.",
+    impact: "Reduces stockouts and overproduction; strong long-term satisfaction gains.",
+    effects: { satisfaction: 9, cost: -3, resilience: 8 }
+  },
+  {
+    id: "inventory_opt",
+    title: "Inventory Optimization",
+    desc: "Dynamic algorithms rebalance stock across warehouses automatically.",
+    impact: "Lowers holding costs and improves delivery consistency.",
+    effects: { cost: 6, resilience: 6, satisfaction: 3 }
+  },
+  {
+    id: "supplier_risk",
+    title: "Supplier Risk Monitoring",
+    desc: "Continuous AI monitoring flags supplier financial and geopolitical risk early.",
+    impact: "Cuts future crisis exposure significantly; a strong resilience play.",
+    effects: { resilience: 12, cost: -2, satisfaction: 2 }
+  },
+  {
+    id: "warehouse_vision",
+    title: "Warehouse Vision (Computer Vision QA)",
+    desc: "Automated visual inspection catches defects and misplacements in real time.",
+    impact: "Improves quality control and reduces costly shipping errors.",
+    effects: { satisfaction: 6, cost: 3, resilience: 3 }
+  },
+  {
+    id: "procurement_copilot",
+    title: "Procurement Copilot",
+    desc: "An AI assistant drafts negotiation strategy and flags contract risk automatically.",
+    impact: "Speeds up sourcing decisions and improves negotiation outcomes over time.",
+    effects: { resilience: 5, cost: 4, satisfaction: 2 }
+  }
+];
+
+/* ---------------------------------------------------------
+   SHARED UI COMPONENTS
+--------------------------------------------------------- */
+function TopBar({ stageLabel }){
+  return (
+    <div className="topbar">
+      <div className="brand"><span className="brand-dot"></span> OPERATION LIFELINE</div>
+      <div className="stage-pill">{stageLabel}</div>
+    </div>
+  );
+}
+
+function ProgressSteps({ current, total }){
+  return (
+    <div className="progress-steps">
+      {Array.from({length: total}).map((_, i) => (
+        <div key={i} className={"dotstep " + (i < current ? "done" : (i === current ? "active" : ""))}></div>
+      ))}
+    </div>
+  );
+}
+
+function StatBar({ label, value, colorClass, suffix }){
+  const [display, setDisplay] = useState(0);
+  useEffect(() => {
+    const t = setTimeout(() => setDisplay(value), 80);
+    return () => clearTimeout(t);
+  }, [value]);
+  return (
+    <div className="bar-row">
+      <div className="bar-top">
+        <span>{label}</span>
+        <span>{Math.round(value)}{suffix || ""}</span>
+      </div>
+      <div className="bar-track">
+        <div className={"bar-fill " + (colorClass || "")} style={{width: clamp(display, 0, 100) + "%"}}></div>
+      </div>
+    </div>
+  );
+}
+
+function WhyBox({ children }){
+  return <div className="why-box"><b>Why this matters:</b> {children}</div>;
+}
+
+/* ---------------------------------------------------------
+   1. WELCOME SCREEN
+--------------------------------------------------------- */
+function Welcome({ onStart }){
+  return (
+    <div className="welcome-wrap fade-in">
+      <div className="stage-pill">SUPPLY CHAIN CRISIS SIMULATION</div>
+      <div className="welcome-title">Operation Lifeline</div>
+      <p className="welcome-sub">
+        Step into the shoes of a Chief Supply Chain Officer. A crisis is about to hit your company —
+        how you respond, negotiate, lead, and invest will determine whether your business bends or breaks.
+        No experience needed: every decision comes with plain-language guidance so you always know what's at stake.
+      </p>
+      <div className="feature-chips">
+        <span className="chip">🏭 Random Company</span>
+        <span className="chip">🚨 Live Crisis Event</span>
+        <span className="chip">🧭 War Room Decisions</span>
+        <span className="chip">🤝 Supplier Negotiation</span>
+        <span className="chip">👔 CEO Boardroom</span>
+        <span className="chip">🤖 AI Strategy</span>
+      </div>
+      <button className="btn" style={{marginTop: 18, fontSize:16, padding:"16px 34px"}} onClick={onStart}>
+        Start Simulation →
+      </button>
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------
+   2. COMPANY REVEAL
+--------------------------------------------------------- */
+function CompanyReveal({ company, onNext }){
+  return (
+    <div className="fade-in">
+      <TopBar stageLabel="Step 1 of 7 — Your Company" />
+      <ProgressSteps current={0} total={7} />
+      <div className="section-title">
+        <span className="step-num">BRIEFING</span>
+      </div>
+      <h1>{company.name}</h1>
+      <p>Industry: <b style={{color:"var(--text-0)"}}>{company.industry}</b> · Operating across {company.countries.join(", ")}</p>
+
+      <div className="grid grid-3" style={{marginTop:18}}>
+        <div className="stat-card">
+          <div className="stat-label">Annual Revenue</div>
+          <div className="stat-value">${company.revenue}M</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-label">Factories</div>
+          <div className="stat-value">{company.factories}</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-label">Warehouses</div>
+          <div className="stat-value">{company.warehouses}</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-label">Active Suppliers</div>
+          <div className="stat-value">{company.suppliers}</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-label">Inventory Coverage</div>
+          <div className="stat-value">{company.inventoryDays} days</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-label">Avg. Lead Time</div>
+          <div className="stat-value">{company.leadTime} days</div>
+        </div>
+      </div>
+
+      <WhyBox>
+        These numbers define your risk profile. Low inventory coverage or long lead times mean less room to absorb
+        a shock — keep them in mind as the crisis unfolds.
+      </WhyBox>
+
+      <div className="footer-actions">
+        <div></div>
+        <button className="btn" onClick={onNext}>Continue to Crisis Briefing →</button>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------
+   3. CRISIS REVEAL
+--------------------------------------------------------- */
+function CrisisReveal({ crisis, company, onNext }){
+  const urgencyBadge = crisis.urgency === "Critical" ? "badge-red" : crisis.urgency === "High" ? "badge-yellow" : "badge-blue";
+  return (
+    <div className="fade-in">
+      <TopBar stageLabel="Step 2 of 7 — Crisis Alert" />
+      <ProgressSteps current={1} total={7} />
+      <div className="card" style={{borderColor:"rgba(255,92,114,0.4)"}}>
+        <div style={{fontSize:40, marginBottom:6}}>{crisis.icon}</div>
+        <div style={{display:"flex", gap:10, alignItems:"center", flexWrap:"wrap"}}>
+          <h2 style={{margin:0}}>{crisis.type}</h2>
+          <span className={"badge " + urgencyBadge}>{crisis.urgency} Urgency</span>
+        </div>
+        <p style={{marginTop:12}}>{crisis.description}</p>
+        <div className="divider"></div>
+        <h4>Business Impact</h4>
+        <p>{crisis.impact}</p>
+      </div>
+
+      <WhyBox>
+        At {company.name}, with {company.inventoryDays} days of inventory and a {company.leadTime}-day average lead time,
+        this type of disruption can escalate quickly. The next decisions you make in the War Room will shape the outcome.
+      </WhyBox>
+
+      <div className="footer-actions">
+        <div></div>
+        <button className="btn" onClick={onNext}>Enter the War Room →</button>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------
+   4. WAR ROOM
+--------------------------------------------------------- */
+function WarRoom({ onComplete }){
+  const [selected, setSelected] = useState([]);
+  const [confirmed, setConfirmed] = useState(false);
+  const [metrics, setMetrics] = useState({ cost: 50, inventory: 50, profit: 50, deliverySpeed: 50, satisfaction: 50 });
+
+  function toggle(id){
+    if (confirmed) return;
+    setSelected(prev => {
+      if (prev.includes(id)) return prev.filter(x => x !== id);
+      if (prev.length >= 3) return prev;
+      return [...prev, id];
+    });
+  }
+
+  function confirmActions(){
+    if (selected.length !== 3) return;
+    let m = { cost: 50, inventory: 50, profit: 50, deliverySpeed: 50, satisfaction: 50 };
+    selected.forEach(id => {
+      const action = WAR_ROOM_ACTIONS.find(a => a.id === id);
+      m.cost = clamp(m.cost + action.effects.cost);
+      m.inventory = clamp(m.inventory + action.effects.inventory);
+      m.profit = clamp(m.profit + action.effects.profit);
+      m.deliverySpeed = clamp(m.deliverySpeed + action.effects.deliverySpeed);
+      m.satisfaction = clamp(m.satisfaction + action.effects.satisfaction);
+    });
+    setMetrics(m);
+    setConfirmed(true);
+  }
+
+  function proceed(){
+    onComplete({ selectedActions: selected, metrics });
+  }
+
+  return (
+    <div className="fade-in">
+      <TopBar stageLabel="Step 3 of 7 — War Room" />
+      <ProgressSteps current={2} total={7} />
+      <div className="section-title"><span className="step-num">DECISION</span></div>
+      <h2>Choose Your Three Response Actions</h2>
+      <p>Select exactly 3 actions. Each choice trades off cost, inventory, profit, delivery speed, and customer satisfaction — there is no perfect combination, only strategic tradeoffs.</p>
+
+      <div className="grid grid-2" style={{marginTop:14}}>
+        {WAR_ROOM_ACTIONS.map(action => {
+          const isSelected = selected.includes(action.id);
+          const disabledLook = !isSelected && selected.length >= 3 && !confirmed;
+          return (
+            <div
+              key={action.id}
+              className={"option-card " + (isSelected ? "selected" : "") + (disabledLook ? " disabled-look" : "")}
+              onClick={() => toggle(action.id)}
+            >
+              <div className="option-title">{isSelected ? "✅ " : ""}{action.title}</div>
+              <p className="option-desc">{action.desc}</p>
+              {isSelected && <div className="why-box" style={{marginTop:10}}><b>Why this matters:</b> {action.why}</div>}
+            </div>
+          );
+        })}
+      </div>
+
+      {!confirmed && (
+        <div className="footer-actions">
+          <div style={{color:"var(--text-2)", fontSize:13, alignSelf:"center"}}>{selected.length} / 3 selected</div>
+          <button className="btn" disabled={selected.length !== 3} onClick={confirmActions}>Confirm & Simulate Impact →</button>
+        </div>
+      )}
+
+      {confirmed && (
+        <div className="card fade-in" style={{marginTop:22}}>
+          <h3>Simulated Outcome</h3>
+          <p>Here's how your combined actions affected the business in the days following the crisis:</p>
+          <div style={{marginTop:16}}>
+            <StatBar label="Cost Efficiency" value={metrics.cost} colorClass={metrics.cost >= 50 ? "green" : "red"} suffix="%" />
+            <StatBar label="Inventory Health" value={metrics.inventory} colorClass={metrics.inventory >= 50 ? "green" : "red"} suffix="%" />
+            <StatBar label="Profit Margin" value={metrics.profit} colorClass={metrics.profit >= 50 ? "green" : "red"} suffix="%" />
+            <StatBar label="Delivery Speed" value={metrics.deliverySpeed} colorClass={metrics.deliverySpeed >= 50 ? "green" : "red"} suffix="%" />
+            <StatBar label="Customer Satisfaction" value={metrics.satisfaction} colorClass={metrics.satisfaction >= 50 ? "green" : "red"} suffix="%" />
+          </div>
+          <div className="footer-actions">
+            <div></div>
+            <button className="btn" onClick={proceed}>Continue to Supplier Negotiation →</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------
+   5. NEGOTIATION
+--------------------------------------------------------- */
+function Negotiation({ onComplete }){
+  const [roundIndex, setRoundIndex] = useState(0);
+  const [stats, setStats] = useState({ trust: 50, price: 50, leadTime: 50 });
+  const [history, setHistory] = useState([]);
+  const [lastPick, setLastPick] = useState(null);
+
+  const round = NEGOTIATION_ROUNDS[roundIndex];
+  const isLastRound = roundIndex === NEGOTIATION_ROUNDS.length - 1;
+
+  function choose(opt){
+    if (lastPick) return;
+    const newStats = {
+      trust: clamp(stats.trust + opt.effects.trust),
+      price: clamp(stats.price + opt.effects.price),
+      leadTime: clamp(stats.leadTime + opt.effects.leadTime)
+    };
+    setStats(newStats);
+    setLastPick(opt);
+    setHistory(prev => [...prev, { round: round.id, choiceLabel: opt.label, why: opt.why }]);
+  }
+
+  function nextRound(){
+    if (isLastRound){
+      const score = Math.round((stats.trust + stats.price + stats.leadTime) / 3);
+      onComplete({ stats, history, score });
+    } else {
+      setRoundIndex(roundIndex + 1);
+      setLastPick(null);
+    }
+  }
+
+  return (
+    <div className="fade-in">
+      <TopBar stageLabel="Step 4 of 7 — Supplier Negotiation" />
+      <ProgressSteps current={3} total={7} />
+      <div className="section-title"><span className="step-num">NEGOTIATION</span></div>
+      <span className="round-tag">Round {round.id} of {NEGOTIATION_ROUNDS.length}</span>
+      <h2>{round.prompt}</h2>
+
+      <div className="grid grid-2" style={{marginTop:10}}>
+        {round.options.map(opt => {
+          const isSel = lastPick && lastPick.id === opt.id;
+          const dimmed = lastPick && lastPick.id !== opt.id;
+          return (
+            <div key={opt.id}
+              className={"option-card " + (isSel ? "selected" : "") + (dimmed ? " disabled-look" : "")}
+              onClick={() => choose(opt)}>
+              <div className="option-title">{opt.label}</div>
+              {isSel && <div className="why-box" style={{marginTop:10}}><b>Why this matters:</b> {opt.why}</div>}
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="card" style={{marginTop:20}}>
+        <h4>Live Negotiation Standing</h4>
+        <StatBar label="Trust" value={stats.trust} colorClass={stats.trust >= 50 ? "green" : "red"} suffix="%" />
+        <StatBar label="Price Favorability" value={stats.price} colorClass={stats.price >= 50 ? "green" : "red"} suffix="%" />
+        <StatBar label="Lead Time Improvement" value={stats.leadTime} colorClass={stats.leadTime >= 50 ? "green" : "red"} suffix="%" />
+      </div>
+
+      <div className="footer-actions">
+        <div></div>
+        <button className="btn" disabled={!lastPick} onClick={nextRound}>
+          {isLastRound ? "Finish Negotiation →" : "Next Round →"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------
+   6. CEO BOARDROOM
+--------------------------------------------------------- */
+function Boardroom({ onComplete }){
+  const [qIndex, setQIndex] = useState(0);
+  const [totalScore, setTotalScore] = useState(0);
+  const [picked, setPicked] = useState(null);
+  const [history, setHistory] = useState([]);
+
+  const question = BOARDROOM_QUESTIONS[qIndex];
+  const isLast = qIndex === BOARDROOM_QUESTIONS.length - 1;
+
+  function choose(opt){
+    if (picked) return;
+    setPicked(opt);
+    setHistory(prev => [...prev, { q: question.q, choice: opt.label, why: opt.why, score: opt.score }]);
+  }
+
+  function next(){
+    const newTotal = totalScore + picked.score;
+    if (isLast){
+      const maxScore = BOARDROOM_QUESTIONS.length * 10;
+      const pct = Math.round((newTotal / maxScore) * 100);
+      onComplete({ score: pct, history: [...history] });
+    } else {
+      setTotalScore(newTotal);
+      setQIndex(qIndex + 1);
+      setPicked(null);
+    }
+  }
+
+  return (
+    <div className="fade-in">
+      <TopBar stageLabel="Step 5 of 7 — CEO Boardroom" />
+      <ProgressSteps current={4} total={7} />
+      <div className="section-title"><span className="step-num">LEADERSHIP TEST</span></div>
+      <span className="round-tag">Question {qIndex + 1} of {BOARDROOM_QUESTIONS.length}</span>
+      <h2>{question.q}</h2>
+
+      <div className="grid" style={{gridTemplateColumns:"1fr", gap:12, marginTop:10}}>
+        {question.options.map((opt, i) => {
+          const isSel = picked && picked.label === opt.label;
+          const dimmed = picked && picked.label !== opt.label;
+          return (
+            <div key={i}
+              className={"option-card " + (isSel ? "selected" : "") + (dimmed ? " disabled-look" : "")}
+              onClick={() => choose(opt)}>
+              <div className="option-title">{opt.label}</div>
+              {isSel && <div className="why-box" style={{marginTop:10}}><b>Why this matters:</b> {opt.why}</div>}
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="footer-actions">
+        <div style={{color:"var(--text-2)", fontSize:13, alignSelf:"center"}}>Executive Score So Far: {totalScore} pts</div>
+        <button className="btn" disabled={!picked} onClick={next}>
+          {isLast ? "Finish Boardroom →" : "Next Question →"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------
+   7. AI STRATEGY
+--------------------------------------------------------- */
+function AIStrategy({ onComplete }){
+  const [selected, setSelected] = useState([]);
+  const [confirmed, setConfirmed] = useState(false);
+
+  function toggle(id){
+    if (confirmed) return;
+    setSelected(prev => {
+      if (prev.includes(id)) return prev.filter(x => x !== id);
+      if (prev.length >= 2) return prev;
+      return [...prev, id];
+    });
+  }
+
+  function confirm(){
+    if (selected.length !== 2) return;
+    setConfirmed(true);
+  }
+
+  function proceed(){
+    const chosen = AI_INVESTMENTS.filter(inv => selected.includes(inv.id));
+    let resilience = 0, cost = 0, satisfaction = 0;
+    chosen.forEach(inv => {
+      resilience += inv.effects.resilience;
+      cost += inv.effects.cost;
+      satisfaction += inv.effects.satisfaction;
+    });
+    onComplete({ chosen, resilience, cost, satisfaction });
+  }
+
+  return (
+    <div className="fade-in">
+      <TopBar stageLabel="Step 6 of 7 — AI Strategy" />
+      <ProgressSteps current={5} total={7} />
+      <div className="section-title"><span className="step-num">FUTURE-PROOFING</span></div>
+      <h2>Choose Two AI Investments</h2>
+      <p>The crisis is stabilizing — now decide where to invest in AI to reduce the odds and impact of the next one.</p>
+
+      <div className="grid grid-2" style={{marginTop:14}}>
+        {AI_INVESTMENTS.map(inv => {
+          const isSelected = selected.includes(inv.id);
+          const disabledLook = !isSelected && selected.length >= 2 && !confirmed;
+          return (
+            <div key={inv.id}
+              className={"option-card " + (isSelected ? "selected" : "") + (disabledLook ? " disabled-look" : "")}
+              onClick={() => toggle(inv.id)}>
+              <div className="option-title">{isSelected ? "✅ " : ""}{inv.title}</div>
+              <p className="option-desc">{inv.desc}</p>
+              {isSelected && <div className="why-box" style={{marginTop:10}}><b>Expected impact:</b> {inv.impact}</div>}
+            </div>
+          );
+        })}
+      </div>
+
+      {!confirmed && (
+        <div className="footer-actions">
+          <div style={{color:"var(--text-2)", fontSize:13, alignSelf:"center"}}>{selected.length} / 2 selected</div>
+          <button className="btn" disabled={selected.length !== 2} onClick={confirm}>Confirm Investments →</button>
+        </div>
+      )}
+
+      {confirmed && (
+        <div className="card fade-in" style={{marginTop:22}}>
+          <h3>Strategic Bet Locked In</h3>
+          <p>Your chosen AI investments will shape long-term resilience and cost structure. Full results are on the final dashboard.</p>
+          <div className="footer-actions">
+            <div></div>
+            <button className="btn" onClick={proceed}>See Final Dashboard →</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------
+   8. FINAL DASHBOARD
+--------------------------------------------------------- */
+function FinalDashboard({ company, crisis, warRoom, negotiation, boardroom, aiStrategy, onReplay }){
+
+  const scores = useMemo(() => {
+    const leadership = boardroom.score; // 0-100
+    const negotiationScore = negotiation.score; // 0-100
+    const resilienceRaw = 50 + aiStrategy.resilience + (warRoom.metrics.inventory - 50) * 0.3;
+    const resilience = clamp(Math.round(resilienceRaw));
+    const costControlRaw = warRoom.metrics.cost + (negotiation.stats.price - 50) * 0.3 + aiStrategy.cost;
+    const costControl = clamp(Math.round(costControlRaw));
+    const riskMgmtRaw = 50 + aiStrategy.resilience * 0.6 + (negotiation.stats.trust - 50) * 0.2 + (warRoom.metrics.inventory - 50) * 0.2;
+    const riskManagement = clamp(Math.round(riskMgmtRaw));
+    const satisfactionRaw = warRoom.metrics.satisfaction + (aiStrategy.satisfaction) + (negotiation.stats.leadTime - 50) * 0.15;
+    const customerSatisfaction = clamp(Math.round(satisfactionRaw));
+
+    const overall = Math.round(
+      leadership * 0.22 +
+      negotiationScore * 0.18 +
+      resilience * 0.18 +
+      costControl * 0.16 +
+      riskManagement * 0.14 +
+      customerSatisfaction * 0.12
+    );
+
+    return { leadership, negotiationScore, resilience, costControl, riskManagement, customerSatisfaction, overall: clamp(overall) };
+  }, []);
+
+  const tier = scores.overall >= 85 ? { label: "Crisis Master", color: "var(--green)" }
+    : scores.overall >= 70 ? { label: "Steady Operator", color: "var(--accent)" }
+    : scores.overall >= 50 ? { label: "Survived, But Shaken", color: "var(--yellow)" }
+    : { label: "Crisis Casualty", color: "var(--red)" };
+
+  // Determine biggest mistake and best decision from histories
+  const boardroomWorst = boardroom.history.reduce((worst, h) => (!worst || h.score < worst.score) ? h : worst, null);
+  const boardroomBest = boardroom.history.reduce((best, h) => (!best || h.score > best.score) ? h : best, null);
+
+  const negWorst = negotiation.history.reduce((worst, h) => {
+    if (!worst) return h;
+    return h; // fallback, we compare via trust deltas below in text instead
+  }, null);
+
+  const feedbackLines = [];
+  if (scores.leadership < 60) feedbackLines.push("Your boardroom decisions leaned reactive rather than decisive — executives are watched closely during a crisis, and hesitation reads as weakness.");
+  if (scores.leadership >= 85) feedbackLines.push("Your leadership responses were consistently transparent and decisive — exactly what boards want to see under pressure.");
+  if (scores.negotiationScore < 50) feedbackLines.push("Supplier trust took a hit during negotiations, which will likely raise costs on your next contract cycle.");
+  if (scores.negotiationScore >= 75) feedbackLines.push("You built strong supplier trust, which should translate into better terms in future dealings.");
+  if (scores.resilience < 55) feedbackLines.push("Your resilience score suggests the business is still vulnerable to a similar shock happening again soon.");
+  if (scores.resilience >= 80) feedbackLines.push("Your AI and inventory choices meaningfully reduced the company's exposure to future disruptions.");
+  if (scores.customerSatisfaction < 50) feedbackLines.push("Customers were left frustrated by the response — expect churn risk in the next quarter if this pattern repeats.");
+  if (scores.costControl < 50) feedbackLines.push("The crisis response came at a steep financial cost — consider cheaper contingency options next time.");
+  if (feedbackLines.length === 0) feedbackLines.push("You navigated the crisis with a well-balanced mix of speed, cost discipline, and stakeholder trust.");
+
+  const biggestMistake = scores.leadership < scores.negotiationScore && scores.leadership < scores.resilience
+    ? (boardroomWorst ? `In the boardroom, choosing "${boardroomWorst.choice}" undercut executive credibility at a critical moment.` : "A leadership decision under pressure cost you credibility.")
+    : scores.negotiationScore <= scores.resilience
+      ? "Aggressive or inconsistent negotiation tactics eroded supplier trust, likely raising future costs."
+      : "Underinvesting in resilience left the business exposed to repeat disruption.";
+
+  const bestDecision = scores.resilience >= scores.negotiationScore && scores.resilience >= scores.leadership
+    ? `Investing in ${aiStrategy.chosen.map(c => c.title).join(" and ")} was your strongest long-term move — it directly boosts future resilience.`
+    : scores.leadership >= scores.negotiationScore
+      ? (boardroomBest ? `Choosing "${boardroomBest.choice}" in the boardroom was a strong display of executive judgment.` : "A confident leadership call stabilized stakeholder confidence.")
+      : "Your supplier negotiation strategy preserved trust while still improving terms.";
+
+  const expertRecommendation = scores.overall >= 75
+    ? "Keep formalizing what worked here into a repeatable crisis playbook — consistency is what separates resilient companies from lucky ones."
+    : scores.overall >= 50
+      ? "Invest further in supplier diversification and predictive risk monitoring — you handled the crisis, but with more margin for error next time."
+      : "Prioritize a full supply chain risk audit immediately — multiple weak points were exposed and left unaddressed during this simulation.";
+
+  const lessons = [
+    "Inventory buffers and lead time flexibility are the first line of defense in any disruption.",
+    "Transparent, fast communication with customers and boards preserves trust even when outcomes are imperfect.",
+    "Supplier relationships built on fairness — not just leverage — pay off most during a crisis, not before it.",
+    "AI investments in forecasting and risk monitoring reduce the odds of being blindsided by the next disruption.",
+    `A ${crisis.type.toLowerCase()} can happen to any company — the winners are the ones with a rehearsed response, not a perfect one.`
+  ];
+
+  return (
+    <div className="fade-in">
+      <TopBar stageLabel="Step 7 of 7 — Final Dashboard" />
+      <ProgressSteps current={6} total={7} />
+      <div className="section-title"><span className="step-num">RESULTS</span></div>
+      <h2>Crisis Debrief: {company.name}</h2>
+
+      <div className="card" style={{textAlign:"center", marginTop:10}}>
+        <div style={{fontSize:12, letterSpacing:"0.1em", color:"var(--text-2)", textTransform:"uppercase"}}>Overall Crisis Score</div>
+        <div className="score-big">{scores.overall}</div>
+        <span className="badge" style={{background:"transparent", border:`1px solid ${tier.color}`, color: tier.color}}>{tier.label}</span>
+      </div>
+
+      <div className="grid grid-3" style={{marginTop:20}}>
+        <ScoreCard label="Leadership" value={scores.leadership} />
+        <ScoreCard label="Negotiation" value={scores.negotiationScore} />
+        <ScoreCard label="Resilience" value={scores.resilience} />
+        <ScoreCard label="Cost Control" value={scores.costControl} />
+        <ScoreCard label="Risk Management" value={scores.riskManagement} />
+        <ScoreCard label="Customer Satisfaction" value={scores.customerSatisfaction} />
+      </div>
+
+      <div className="card" style={{marginTop:20}}>
+        <h3>Personalized Feedback</h3>
+        <ul className="list-clean">
+          {feedbackLines.map((l, i) => <li key={i}>{l}</li>)}
+        </ul>
+      </div>
+
+      <div className="grid grid-2" style={{marginTop:16}}>
+        <div className="card">
+          <h4 style={{color:"var(--red)"}}>⚠️ Biggest Mistake</h4>
+          <p>{biggestMistake}</p>
+        </div>
+        <div className="card">
+          <h4 style={{color:"var(--green)"}}>⭐ Best Decision</h4>
+          <p>{bestDecision}</p>
+        </div>
+      </div>
+
+      <div className="card" style={{marginTop:16}}>
+        <h4>🧠 Expert Recommendation</h4>
+        <p>{expertRecommendation}</p>
+      </div>
+
+      <div className="card" style={{marginTop:16}}>
+        <h4>📘 Lessons Learned</h4>
+        <ul className="list-clean">
+          {lessons.map((l, i) => <li key={i}>{l}</li>)}
+        </ul>
+      </div>
+
+      <div className="footer-actions">
+        <div></div>
+        <button className="btn" onClick={onReplay}>🔁 Run a New Simulation</button>
+      </div>
+    </div>
+  );
+}
+
+function ScoreCard({ label, value }){
+  const color = value >= 70 ? "var(--green)" : value >= 45 ? "var(--yellow)" : "var(--red)";
+  return (
+    <div className="stat-card">
+      <div className="stat-label">{label}</div>
+      <div className="stat-value" style={{color}}>{value}</div>
+      <div className="bar-track" style={{marginTop:8}}>
+        <div className="bar-fill" style={{width: value + "%", background: color}}></div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------
+   MAIN APP
+--------------------------------------------------------- */
+function App(){
+  const [stage, setStage] = useState("welcome");
+  const [company, setCompany] = useState(null);
+  const [crisis, setCrisis] = useState(null);
+  const [warRoomResult, setWarRoomResult] = useState(null);
+  const [negotiationResult, setNegotiationResult] = useState(null);
+  const [boardroomResult, setBoardroomResult] = useState(null);
+  const [aiStrategyResult, setAiStrategyResult] = useState(null);
+
+  function startSimulation(){
+    setCompany(generateCompany());
+    setCrisis(generateCrisis());
+    setWarRoomResult(null);
+    setNegotiationResult(null);
+    setBoardroomResult(null);
+    setAiStrategyResult(null);
+    setStage("company");
+  }
+
+  function replay(){
+    setStage("welcome");
+  }
+
+  return (
+    <div className="app-shell">
+      {stage === "welcome" && <Welcome onStart={startSimulation} />}
+      {stage === "company" && company && (
+        <CompanyReveal company={company} onNext={() => setStage("crisis")} />
+      )}
+      {stage === "crisis" && crisis && (
+        <CrisisReveal crisis={crisis} company={company} onNext={() => setStage("warroom")} />
+      )}
+      {stage === "warroom" && (
+        <WarRoom onComplete={(result) => { setWarRoomResult(result); setStage("negotiation"); }} />
+      )}
+      {stage === "negotiation" && (
+        <Negotiation onComplete={(result) => { setNegotiationResult(result); setStage("boardroom"); }} />
+      )}
+      {stage === "boardroom" && (
+        <Boardroom onComplete={(result) => { setBoardroomResult(result); setStage("aistrategy"); }} />
+      )}
+      {stage === "aistrategy" && (
+        <AIStrategy onComplete={(result) => { setAiStrategyResult(result); setStage("dashboard"); }} />
+      )}
+      {stage === "dashboard" && warRoomResult && negotiationResult && boardroomResult && aiStrategyResult && (
+        <FinalDashboard
+          company={company}
+          crisis={crisis}
+          warRoom={warRoomResult}
+          negotiation={negotiationResult}
+          boardroom={boardroomResult}
+          aiStrategy={aiStrategyResult}
+          onReplay={replay}
+        />
+      )}
+    </div>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(<App />);
+</script>
+</body>
+</html>
+```
