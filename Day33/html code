@@ -1,0 +1,1168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Media Integrity Analyzer</title>
+<style>
+  :root{
+    --bg:#181410;
+    --bg-elev:#211b15;
+    --card:#2a2119;
+    --card-hover:#332822;
+    --ink:#f3ede3;
+    --ink-dim:#c9beac;
+    --ink-faint:#8f8474;
+    --orange:#d97757;
+    --orange-bright:#ff8a5c;
+    --orange-dim:rgba(217,119,87,0.15);
+    --line:rgba(243,237,227,0.1);
+    --good:#7fb87f;
+    --warn:#e0b24d;
+    --bad:#d9695c;
+    --serif:"Iowan Old Style","Palatino Linotype","Book Antiqua",Georgia,serif;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    --mono:"SF Mono","Courier New",monospace;
+  }
+
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:
+      radial-gradient(ellipse 80% 50% at 50% -10%, rgba(217,119,87,0.12), transparent),
+      var(--bg);
+    color:var(--ink);
+    font-family:var(--sans);
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:0.01ms !important; transition-duration:0.01ms !important;}
+  }
+
+  ::selection{background:var(--orange); color:#1a1410;}
+
+  a{color:var(--orange-bright);}
+
+  /* ---------- layout shell ---------- */
+  .masthead{
+    border-bottom:1px solid var(--line);
+    padding:28px 24px 20px;
+    position:sticky;
+    top:0;
+    background:rgba(24,20,16,0.88);
+    backdrop-filter:blur(10px);
+    z-index:50;
+  }
+  .masthead-inner{
+    max-width:920px;
+    margin:0 auto;
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    gap:16px;
+    flex-wrap:wrap;
+  }
+  .masthead .kicker{
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:0.14em;
+    text-transform:uppercase;
+    color:var(--orange-bright);
+  }
+  .masthead h1{
+    font-family:var(--serif);
+    font-weight:600;
+    font-size:26px;
+    margin:2px 0 0;
+    letter-spacing:0.01em;
+  }
+  .masthead h1 em{
+    font-style:italic;
+    color:var(--orange-bright);
+  }
+
+  .progress-rail{
+    display:flex;
+    gap:6px;
+    align-items:center;
+  }
+  .progress-dot{
+    width:9px;height:9px;border-radius:50%;
+    background:var(--line);
+    border:1px solid var(--line);
+    transition:all .4s ease;
+  }
+  .progress-dot.active{
+    background:var(--orange);
+    border-color:var(--orange);
+    box-shadow:0 0 0 4px var(--orange-dim);
+  }
+  .progress-dot.done{
+    background:var(--good);
+    border-color:var(--good);
+  }
+  .progress-label{
+    font-family:var(--mono);
+    font-size:11px;
+    color:var(--ink-faint);
+    margin-left:6px;
+  }
+
+  main{
+    max-width:920px;
+    margin:0 auto;
+    padding:36px 24px 100px;
+  }
+
+  .stage{
+    display:none;
+    animation:riseIn .55s cubic-bezier(.16,.9,.3,1) both;
+  }
+  .stage.visible{display:block;}
+
+  @keyframes riseIn{
+    from{opacity:0; transform:translateY(14px);}
+    to{opacity:1; transform:translateY(0);}
+  }
+
+  /* ---------- metrics dashboard (persistent) ---------- */
+  .metrics-bar{
+    max-width:920px;
+    margin:0 auto;
+    padding:16px 24px 0;
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:12px;
+  }
+  .metric{
+    background:var(--bg-elev);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:12px 14px;
+  }
+  .metric-label{
+    font-family:var(--mono);
+    font-size:10px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color:var(--ink-faint);
+    display:flex;
+    justify-content:space-between;
+  }
+  .metric-value{
+    font-family:var(--serif);
+    font-size:22px;
+    margin-top:4px;
+    color:var(--ink);
+  }
+  .metric-track{
+    height:5px;
+    background:rgba(255,255,255,0.06);
+    border-radius:4px;
+    margin-top:8px;
+    overflow:hidden;
+  }
+  .metric-fill{
+    height:100%;
+    border-radius:4px;
+    background:linear-gradient(90deg,var(--orange),var(--orange-bright));
+    width:0%;
+    transition:width 1s cubic-bezier(.16,.9,.3,1);
+  }
+  .metric-fill.bad-metric{background:linear-gradient(90deg,#b85c50,var(--bad));}
+
+  @media (max-width:640px){
+    .metrics-bar{grid-template-columns:repeat(2,1fr);}
+  }
+
+  /* ---------- cards & components ---------- */
+  .card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:28px;
+    margin-bottom:22px;
+    transition:border-color .3s ease, background .3s ease;
+  }
+  .card:hover{border-color:rgba(217,119,87,0.35);}
+
+  .lesson-card{
+    background:linear-gradient(160deg, var(--bg-elev), var(--card));
+    border-left:3px solid var(--orange);
+  }
+  .lesson-card .eyebrow{
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:0.1em;
+    text-transform:uppercase;
+    color:var(--orange-bright);
+    margin-bottom:8px;
+    display:block;
+  }
+  .lesson-card h2{
+    font-family:var(--serif);
+    font-size:24px;
+    margin:0 0 12px;
+  }
+  .lesson-card p{
+    color:var(--ink-dim);
+    margin:0 0 10px;
+    font-size:15.5px;
+  }
+  .lesson-card .why{
+    background:rgba(217,119,87,0.08);
+    border:1px solid rgba(217,119,87,0.2);
+    border-radius:10px;
+    padding:12px 16px;
+    font-size:14px;
+    color:var(--ink-dim);
+    margin-top:14px;
+  }
+  .lesson-card .why strong{color:var(--orange-bright);}
+
+  .btn{
+    appearance:none;
+    border:1px solid var(--line);
+    background:var(--bg-elev);
+    color:var(--ink);
+    font-family:var(--sans);
+    font-size:14.5px;
+    font-weight:600;
+    padding:12px 22px;
+    border-radius:10px;
+    cursor:pointer;
+    transition:all .22s ease;
+  }
+  .btn:hover{
+    border-color:var(--orange);
+    background:var(--orange-dim);
+    transform:translateY(-1px);
+  }
+  .btn:focus-visible{
+    outline:2px solid var(--orange-bright);
+    outline-offset:2px;
+  }
+  .btn-primary{
+    background:linear-gradient(135deg,var(--orange),#c2603f);
+    border-color:transparent;
+    color:#1a1108;
+  }
+  .btn-primary:hover{
+    filter:brightness(1.08);
+    box-shadow:0 6px 20px rgba(217,119,87,0.35);
+  }
+  .btn:disabled{opacity:0.4; cursor:not-allowed; transform:none;}
+
+  .btn-row{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-top:18px;
+  }
+
+  /* ---------- article mockup ---------- */
+  .article-mock{
+    background:var(--bg-elev);
+    border:1px solid var(--line);
+    border-radius:14px;
+    overflow:hidden;
+  }
+  .article-mock .source-bar{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:12px 20px;
+    border-bottom:1px solid var(--line);
+    font-family:var(--mono);
+    font-size:11px;
+    color:var(--ink-faint);
+    letter-spacing:0.05em;
+  }
+  .source-dot{width:8px;height:8px;border-radius:50%;background:var(--warn);}
+  .article-mock .headline{
+    font-family:var(--serif);
+    font-size:23px;
+    font-weight:700;
+    padding:20px 24px 6px;
+    line-height:1.3;
+  }
+  .article-mock .byline{
+    padding:0 24px;
+    font-size:12px;
+    color:var(--ink-faint);
+    font-family:var(--mono);
+  }
+  .article-mock .body{
+    padding:16px 24px 24px;
+    color:var(--ink-dim);
+    font-size:15px;
+  }
+  .article-mock .body p{margin:0 0 12px;}
+
+  /* social post mock */
+  .social-mock{
+    background:var(--bg-elev);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:20px;
+  }
+  .social-mock .handle-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:14px;
+  }
+  .avatar{
+    width:36px;height:36px;border-radius:50%;
+    background:linear-gradient(135deg,var(--orange),#8a4a30);
+    flex-shrink:0;
+  }
+  .handle{font-weight:700; font-size:14px;}
+  .handle-sub{font-size:12px; color:var(--ink-faint); font-family:var(--mono);}
+  .social-mock .caption{
+    font-size:16px;
+    line-height:1.55;
+    color:var(--ink);
+  }
+  .social-mock .stats-row{
+    display:flex;
+    gap:22px;
+    margin-top:16px;
+    padding-top:14px;
+    border-top:1px solid var(--line);
+    font-family:var(--mono);
+    font-size:12px;
+    color:var(--ink-faint);
+  }
+
+  /* clickable word highlighting */
+  .pickable{
+    cursor:pointer;
+    border-radius:4px;
+    padding:1px 2px;
+    transition:background .15s ease;
+  }
+  .pickable:hover{background:rgba(217,119,87,0.25);}
+  .pickable.selected{
+    background:var(--orange);
+    color:#1a1108;
+    font-weight:700;
+  }
+
+  /* choice buttons */
+  .choice-row{
+    display:flex;
+    gap:12px;
+    margin:18px 0;
+    flex-wrap:wrap;
+  }
+  .choice-btn{
+    flex:1;
+    min-width:110px;
+    padding:14px;
+    text-align:center;
+    background:var(--bg-elev);
+    border:1px solid var(--line);
+    border-radius:12px;
+    font-weight:700;
+    font-size:14px;
+    cursor:pointer;
+    color:var(--ink);
+    transition:all .2s ease;
+  }
+  .choice-btn:hover{border-color:var(--orange); transform:translateY(-2px);}
+  .choice-btn.chosen{
+    border-color:var(--orange);
+    background:var(--orange-dim);
+    box-shadow:inset 0 0 0 1px var(--orange);
+  }
+
+  .instruction{
+    font-size:13.5px;
+    color:var(--ink-faint);
+    font-style:italic;
+    margin-top:6px;
+  }
+
+  /* reveal panel */
+  .reveal{
+    margin-top:24px;
+    padding-top:24px;
+    border-top:1px dashed var(--line);
+    display:none;
+    animation:riseIn .5s ease both;
+  }
+  .reveal.visible{display:block;}
+
+  .score-hero{
+    display:flex;
+    align-items:center;
+    gap:20px;
+    background:var(--bg-elev);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:20px 24px;
+    margin-bottom:20px;
+  }
+  .score-ring{
+    position:relative;
+    width:84px; height:84px;
+    flex-shrink:0;
+  }
+  .score-ring svg{transform:rotate(-90deg);}
+  .score-ring .track{fill:none; stroke:rgba(255,255,255,0.08); stroke-width:8;}
+  .score-ring .fill{fill:none; stroke:var(--orange); stroke-width:8; stroke-linecap:round; transition:stroke-dashoffset 1.2s cubic-bezier(.16,.9,.3,1);}
+  .score-ring .num{
+    position:absolute; inset:0;
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--serif); font-weight:700; font-size:20px;
+  }
+  .score-hero-text .label{
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color:var(--ink-faint);
+  }
+  .score-hero-text .desc{
+    font-family:var(--serif);
+    font-size:19px;
+    margin-top:2px;
+  }
+
+  .block-title{
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:0.1em;
+    text-transform:uppercase;
+    color:var(--orange-bright);
+    margin:20px 0 8px;
+  }
+
+  .rewrite-box{
+    background:rgba(127,184,127,0.08);
+    border:1px solid rgba(127,184,127,0.25);
+    border-radius:10px;
+    padding:14px 18px;
+    font-family:var(--serif);
+    font-size:16px;
+    color:var(--ink);
+  }
+
+  .takeaway-box{
+    margin-top:18px;
+    background:var(--orange-dim);
+    border:1px solid rgba(217,119,87,0.3);
+    border-radius:10px;
+    padding:16px 18px;
+    display:flex;
+    gap:12px;
+    align-items:flex-start;
+  }
+  .takeaway-box .icon{font-size:20px;}
+  .takeaway-box p{margin:0; font-size:14.5px; color:var(--ink);}
+  .takeaway-box strong{color:var(--orange-bright);}
+
+  .tag-list{display:flex; gap:8px; flex-wrap:wrap; margin-top:6px;}
+  .tag{
+    font-family:var(--mono);
+    font-size:11.5px;
+    padding:5px 10px;
+    border-radius:20px;
+    border:1px solid var(--line);
+    color:var(--ink-dim);
+  }
+
+  /* dashboard */
+  .dash-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:18px;
+  }
+  @media (max-width:640px){.dash-grid{grid-template-columns:1fr;}}
+  .dash-card{
+    background:var(--bg-elev);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:20px;
+  }
+  .dash-card h3{
+    font-family:var(--serif);
+    font-size:16px;
+    margin:0 0 10px;
+    color:var(--orange-bright);
+  }
+  .habit-list{margin:0; padding-left:20px; color:var(--ink-dim); font-size:14.5px;}
+  .habit-list li{margin-bottom:8px;}
+
+  footer.note{
+    text-align:center;
+    color:var(--ink-faint);
+    font-size:12px;
+    font-family:var(--mono);
+    margin-top:40px;
+  }
+
+  .hidden{display:none !important;}
+
+  /* redflag banner */
+  .redflag{
+    display:flex;
+    gap:14px;
+    align-items:center;
+    background:rgba(217,105,92,0.1);
+    border:1px solid rgba(217,105,92,0.35);
+    border-radius:14px;
+    padding:18px 22px;
+    margin-bottom:22px;
+  }
+  .redflag .icon{font-size:26px;}
+  .redflag h3{margin:0 0 4px; font-family:var(--serif); font-size:17px; color:var(--bad);}
+  .redflag p{margin:0; color:var(--ink-dim); font-size:14px;}
+
+</style>
+</head>
+<body>
+
+<div class="masthead">
+  <div class="masthead-inner">
+    <div>
+      <span class="kicker">A Guided Lesson</span>
+      <h1>Media Integrity <em>Analyzer</em></h1>
+    </div>
+    <div class="progress-rail" id="progressRail" aria-label="Lesson progress"></div>
+  </div>
+</div>
+
+<div class="metrics-bar" id="metricsBar">
+  <div class="metric">
+    <div class="metric-label"><span>Headline Accuracy</span><span id="mHeadlineNum">—</span></div>
+    <div class="metric-value" id="mHeadlineVal">—</div>
+    <div class="metric-track"><div class="metric-fill" id="mHeadlineFill"></div></div>
+  </div>
+  <div class="metric">
+    <div class="metric-label"><span>Source Reliability</span><span id="mSourceNum">—</span></div>
+    <div class="metric-value" id="mSourceVal">—</div>
+    <div class="metric-track"><div class="metric-fill" id="mSourceFill"></div></div>
+  </div>
+  <div class="metric">
+    <div class="metric-label"><span>Emotional Manipulation</span><span id="mEmotionNum">—</span></div>
+    <div class="metric-value" id="mEmotionVal">—</div>
+    <div class="metric-track"><div class="metric-fill bad-metric" id="mEmotionFill"></div></div>
+  </div>
+  <div class="metric">
+    <div class="metric-label"><span>Audience Targeting</span><span id="mAudienceNum">—</span></div>
+    <div class="metric-value" id="mAudienceVal">—</div>
+    <div class="metric-track"><div class="metric-fill bad-metric" id="mAudienceFill"></div></div>
+  </div>
+</div>
+
+<main>
+
+  <!-- STAGE 0: INTRO -->
+  <section class="stage visible" id="stage-intro">
+    <div class="card lesson-card">
+      <span class="eyebrow">Welcome</span>
+      <h2>Learn to read between the lines.</h2>
+      <p>Every day, headlines and posts are engineered to grab your attention before your brain has a chance to think. This isn't about spotting "fake news" — most manipulation hides inside stories that are technically true, just framed to provoke.</p>
+      <p>You'll work through two short challenges. In each one, you'll look at a real-feeling piece of media, make a call on instinct, and then we'll reveal exactly how it was built to affect you.</p>
+      <div class="why"><strong>Why it matters:</strong> the goal isn't to make you cynical about everything — it's to give you a reflex: notice the feeling first, then check the facts, before you share, click, or believe.</div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="goTo('stage-1-lesson')">Begin the lesson →</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- STAGE 1: HEADLINE CHALLENGE - LESSON -->
+  <section class="stage" id="stage-1-lesson">
+    <div class="card lesson-card">
+      <span class="eyebrow">Challenge 1 of 2 — Headline Detective</span>
+      <h2>Headlines are written to be clicked, not to be accurate.</h2>
+      <p>A headline's job is to earn a click in under two seconds. That pressure quietly pushes writers toward exaggeration: vague sourcing ("experts say"), inflated numbers, and words like "shocking" or "destroys" that promise more than the article delivers.</p>
+      <div class="why"><strong>Why it matters:</strong> studies on news consumption consistently find most people share articles after reading only the headline. If the headline oversells the story, the exaggeration is what actually spreads — not the truth inside.</div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="renderHeadlineChallenge(); goTo('stage-1-challenge')">Show me a headline →</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- STAGE 1: HEADLINE CHALLENGE - INTERACTIVE -->
+  <section class="stage" id="stage-1-challenge">
+    <div class="card">
+      <div class="article-mock">
+        <div class="source-bar"><span class="source-dot"></span><span id="h1-source">DAILY PULSE NETWORK · TRENDING</span></div>
+        <div class="headline" id="h1-headline"></div>
+        <div class="byline" id="h1-byline"></div>
+        <div class="body" id="h1-body"></div>
+      </div>
+
+      <div class="block-title">Step 1 — Your gut reaction</div>
+      <p class="instruction">Would you click this headline if you saw it in your feed?</p>
+      <div class="choice-row" id="h1-click-choices">
+        <div class="choice-btn" data-val="Yes">Yes</div>
+        <div class="choice-btn" data-val="Maybe">Maybe</div>
+        <div class="choice-btn" data-val="No">No</div>
+      </div>
+
+      <div class="block-title">Step 2 — Spot the spin</div>
+      <p class="instruction">Tap any words in the headline above that feel exaggerated or misleading, then reveal the analysis.</p>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" id="h1-reveal-btn" onclick="revealHeadline()" disabled>Reveal analysis →</button>
+      </div>
+
+      <div class="reveal" id="h1-reveal">
+        <div class="score-hero">
+          <div class="score-ring">
+            <svg width="84" height="84" viewBox="0 0 84 84">
+              <circle class="track" cx="42" cy="42" r="36"></circle>
+              <circle class="fill" id="h1-ring-fill" cx="42" cy="42" r="36" stroke-dasharray="226" stroke-dashoffset="226"></circle>
+            </svg>
+            <div class="num" id="h1-ring-num">0%</div>
+          </div>
+          <div class="score-hero-text">
+            <div class="label">Headline Accuracy Score</div>
+            <div class="desc" id="h1-score-desc">Calculating…</div>
+          </div>
+        </div>
+
+        <div class="block-title">What was exaggerated</div>
+        <p id="h1-explanation" style="color:var(--ink-dim); font-size:15px;"></p>
+        <div class="tag-list" id="h1-mismatch-tags"></div>
+
+        <div class="block-title">A fair, accurate rewrite</div>
+        <div class="rewrite-box" id="h1-rewrite"></div>
+
+        <div class="takeaway-box">
+          <div class="icon">💡</div>
+          <p><strong>Key takeaway:</strong> <span id="h1-takeaway"></span></p>
+        </div>
+
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="goTo('stage-2-lesson')">Continue to Challenge 2 →</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STAGE 2: EMOTION CHALLENGE - LESSON -->
+  <section class="stage" id="stage-2-lesson">
+    <div class="card lesson-card">
+      <span class="eyebrow">Challenge 2 of 2 — Emotion Detector</span>
+      <h2>Content that makes you <em>feel</em> something spreads faster than content that informs you.</h2>
+      <p>Fear, outrage, and awe are the three emotions platforms' algorithms reward the most, because they keep people scrolling and reacting. Posts are often written — consciously or not — to trigger one of these before you've evaluated any facts.</p>
+      <div class="why"><strong>Why it matters:</strong> when you can name the emotion a post is aiming for, you get a half-second of distance before you react, comment, or share — enough time to ask "is this true, or just loud?"</div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="renderEmotionChallenge(); goTo('stage-2-challenge')">Show me a post →</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- STAGE 2: EMOTION CHALLENGE - INTERACTIVE -->
+  <section class="stage" id="stage-2-challenge">
+    <div class="card">
+      <div class="social-mock">
+        <div class="handle-row">
+          <div class="avatar"></div>
+          <div>
+            <div class="handle" id="e1-handle"></div>
+            <div class="handle-sub" id="e1-handle-sub"></div>
+          </div>
+        </div>
+        <div class="caption" id="e1-caption"></div>
+        <div class="stats-row" id="e1-stats"></div>
+      </div>
+
+      <div class="block-title">Step 1 — How did that make you feel?</div>
+      <div class="choice-row" id="e1-feel-choices">
+        <div class="choice-btn" data-val="Angry">Angry</div>
+        <div class="choice-btn" data-val="Anxious">Anxious</div>
+        <div class="choice-btn" data-val="Inspired">Inspired</div>
+        <div class="choice-btn" data-val="Suspicious">Suspicious</div>
+      </div>
+
+      <div class="block-title">Step 2 — Which words caused that feeling?</div>
+      <p class="instruction">Tap the words in the post above that pushed that emotion, then reveal the breakdown.</p>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" id="e1-reveal-btn" onclick="revealEmotion()" disabled>Reveal breakdown →</button>
+      </div>
+
+      <div class="reveal" id="e1-reveal">
+        <div class="block-title">Who this was built for</div>
+        <p style="color:var(--ink-dim); font-size:15px;" id="e1-audience"></p>
+
+        <div class="block-title">Intended emotional response</div>
+        <div class="tag-list" id="e1-emotion-tags"></div>
+
+        <div class="block-title">Manipulation technique</div>
+        <p style="color:var(--ink-dim); font-size:15px;" id="e1-technique"></p>
+
+        <div class="block-title">Emotionally loaded phrases</div>
+        <div class="tag-list" id="e1-phrase-tags"></div>
+
+        <div class="block-title">A calmer, neutral rewrite</div>
+        <div class="rewrite-box" id="e1-rewrite"></div>
+
+        <div class="takeaway-box">
+          <div class="icon">💡</div>
+          <p><strong>Key takeaway:</strong> <span id="e1-takeaway"></span></p>
+        </div>
+
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="renderDashboard(); goTo('stage-dashboard')">See my Media Integrity Dashboard →</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STAGE 3: DASHBOARD -->
+  <section class="stage" id="stage-dashboard">
+    <div class="card lesson-card">
+      <span class="eyebrow">Your Results</span>
+      <h2>Media Integrity Dashboard</h2>
+
+      <div class="score-hero" style="margin-top:14px;">
+        <div class="score-ring">
+          <svg width="84" height="84" viewBox="0 0 84 84">
+            <circle class="track" cx="42" cy="42" r="36"></circle>
+            <circle class="fill" id="dash-ring-fill" cx="42" cy="42" r="36" stroke-dasharray="226" stroke-dashoffset="226"></circle>
+          </svg>
+          <div class="num" id="dash-ring-num">0%</div>
+        </div>
+        <div class="score-hero-text">
+          <div class="label">Overall Media Integrity Score</div>
+          <div class="desc" id="dash-score-desc">—</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="redflag" id="dash-redflag">
+      <div class="icon">🚩</div>
+      <div>
+        <h3>Biggest red flag you encountered</h3>
+        <p id="dash-redflag-text"></p>
+      </div>
+    </div>
+
+    <div class="dash-grid">
+      <div class="dash-card">
+        <h3>What you learned</h3>
+        <p style="color:var(--ink-dim); font-size:14.5px;" id="dash-learned"></p>
+      </div>
+      <div class="dash-card">
+        <h3>Three habits to keep</h3>
+        <ol class="habit-list">
+          <li>Read past the headline before reacting or sharing — the exaggeration lives in the first ten words.</li>
+          <li>Name the emotion a post wants from you (fear, outrage, awe) before you comment.</li>
+          <li>Check who benefits from you feeling that way — that's usually the real target audience.</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="card" style="text-align:center;">
+      <p style="color:var(--ink-dim); margin-bottom:16px;">Ready to sharpen your eye further?</p>
+      <button class="btn btn-primary" onclick="replay()">↻ Replay with new scenarios</button>
+    </div>
+  </section>
+
+</main>
+
+<footer class="note">Media Integrity Analyzer — all scenarios are fictional, generated for learning purposes.</footer>
+
+<script>
+/* ============================================================
+   STATE
+   ============================================================ */
+const stages = ['stage-intro','stage-1-lesson','stage-1-challenge','stage-2-lesson','stage-2-challenge','stage-dashboard'];
+let currentIndex = 0;
+
+const metrics = { headline: null, source: null, emotion: null, audience: null };
+
+let h1 = null, h1Selected = new Set(), h1Choice = null;
+let e1 = null, e1Selected = new Set(), e1Choice = null;
+
+/* ============================================================
+   CONTENT BANKS
+   ============================================================ */
+const headlineBank = [
+  {
+    source: "THE DAILY PULSE · TRENDING NOW",
+    headline: "Local Snack Company's New Recipe Completely Destroys Everything We Thought We Knew About Sugar",
+    byline: "By a Staff Correspondent · Sponsored Trending Section",
+    body: [
+      "A regional snack brand, Wholesome Crumb, quietly adjusted the sugar content in its granola bars this month, trimming roughly 2 grams of added sugar per serving as part of a routine recipe update.",
+      "The change follows a broader trend among snack producers to slightly reduce added sugars in response to consumer requests, according to a company spokesperson.",
+      "Nutritionists note that a 2-gram reduction is a minor adjustment and does not significantly change the overall nutritional profile of the product."
+    ],
+    exaggerated: ["Completely", "Destroys", "Everything We Thought We Knew"],
+    accuracy: 24,
+    explanation: "The headline uses maximal language — \"completely destroys everything we thought we knew\" — to describe what is, according to the article itself, a minor 2-gram sugar reduction. There is no new scientific finding here at all; the drama is entirely manufactured by word choice.",
+    rewrite: "Wholesome Crumb Trims 2 Grams of Sugar From Its Granola Bar Recipe",
+    takeaway: "When a headline uses words like \"destroys,\" \"shocking,\" or \"everything changes,\" check whether the actual event in paragraph one matches that scale. Often it's a routine update wearing a dramatic costume."
+  },
+  {
+    source: "VIRAL WIRE DAILY · JUST IN",
+    headline: "Scientists Baffled After City Park Squirrels Start Behaving 'Unlike Anything Seen Before'",
+    byline: "By Contributing Writer · Regional Desk",
+    body: [
+      "Researchers at a state university observed that squirrels in a downtown park have begun burying nuts in slightly different locations following recent construction nearby, a behavior consistent with known responses to habitat disruption.",
+      "\"This is a fairly typical adaptive response we've documented in other urban squirrel populations,\" said one of the researchers involved in the informal observation.",
+      "The university has not published a formal study, and no researcher described being 'baffled' by the behavior."
+    ],
+    exaggerated: ["Baffled", "Unlike Anything Seen Before"],
+    accuracy: 18,
+    explanation: "No scientist quoted in the article expresses confusion — in fact, one explicitly calls the behavior \"fairly typical.\" The headline invents a sense of mystery and novelty that directly contradicts the article's own quoted source.",
+    rewrite: "Downtown Park Squirrels Adjust Nut-Burying Habits After Nearby Construction, Researchers Say",
+    takeaway: "Watch for headlines that claim experts are \"baffled\" or \"stunned\" — then check if any quoted expert actually says that. Often the article contradicts its own headline."
+  },
+  {
+    source: "PULSEFEED · TOP STORY",
+    headline: "This One Household Habit Could Be Quietly Ruining Your Sleep, Experts Warn",
+    byline: "By Health & Wellness Desk",
+    body: [
+      "A small survey of 40 adults conducted by a mattress company found that participants who used phones in bed reported slightly lower sleep satisfaction scores than those who did not.",
+      "Sleep researchers not affiliated with the survey noted that screen use before bed is a known factor in sleep quality, though the effect size in this particular survey was small and the sample size limited.",
+      "The company that conducted the survey also sells a blue-light-filtering nightstand lamp."
+    ],
+    exaggerated: ["Quietly Ruining", "Experts Warn"],
+    accuracy: 35,
+    explanation: "\"Experts warn\" implies a broad scientific consensus and urgency, but the actual source is a small, company-funded survey of 40 people — not an expert panel or peer-reviewed study. \"Quietly ruining\" overstates a \"slightly lower satisfaction score.\"",
+    rewrite: "Small Survey Suggests Phone Use in Bed Linked to Slightly Lower Sleep Satisfaction",
+    takeaway: "Phrases like \"experts warn\" can hide a single small survey, sometimes funded by a company that sells the solution. Ask: how many people were studied, and who paid for it?"
+  }
+];
+
+const emotionBank = [
+  {
+    handle: "@realtalk.now",
+    handleSub: "Lifestyle & Opinion · 412K followers",
+    stats: ["💬 3,204 comments", "🔁 18.9K shares", "❤️ 91K likes"],
+    caption: "They don't want you to know this, but the reason you're always exhausted isn't your schedule — it's that everyone around you has quietly given up on you. Wake up. Nobody is coming to save you. Share this before it gets taken down.",
+    loaded: ["they don't want you to know", "quietly given up on you", "wake up", "nobody is coming to save you", "before it gets taken down"],
+    audience: "People currently feeling burned out, isolated, or unsupported — the vague, ominous framing is designed to feel personally true to almost anyone who's tired, regardless of their actual circumstances.",
+    intendedEmotions: ["Fear", "Isolation", "Urgency"],
+    technique: "This is a classic \"vague conspiracy + false urgency\" pattern: it implies hidden information (\"they don't want you to know\"), assigns blame to unnamed others (\"everyone... has given up on you\"), and manufactures urgency with a takedown threat that has no real basis — social platforms don't remove posts for saying true things about exhaustion.",
+    rewrite: "Feeling exhausted is common, and it's often linked to workload, sleep, or lack of support — not a sign that people around you have given up. If you're feeling isolated, it may help to talk to someone you trust.",
+    takeaway: "Posts that claim \"they don't want you to know\" or warn a post will be \"taken down\" are using manufactured secrecy to create urgency. Real information rarely needs a countdown clock to be worth reading."
+  },
+  {
+    handle: "@dailyoutragewire",
+    handleSub: "News Commentary · 780K followers",
+    stats: ["💬 9,110 comments", "🔁 41K shares", "❤️ 205K likes"],
+    caption: "You will NOT believe what your city council just quietly voted to approve while you were asleep. This affects YOUR street, YOUR taxes, YOUR family — and almost nobody is talking about it. Tag someone who needs to see this NOW.",
+    loaded: ["you will not believe", "quietly voted", "while you were asleep", "your street, your taxes, your family", "tag someone", "now"],
+    audience: "Local residents anxious about local government decisions and taxes — repeated \"your\" language personalizes a generic civic process to feel like a direct, individual threat.",
+    intendedEmotions: ["Outrage", "Anxiety", "Urgency"],
+    technique: "This uses repetition of \"your\" to manufacture personal stakes in what may be a routine, publicly-noticed vote, combined with an urgency command (\"tag someone NOW\") designed to drive shares before anyone checks the actual council record.",
+    rewrite: "The city council approved a new measure this week. Here's what it includes and how it may affect local taxes and services.",
+    takeaway: "When a post repeats \"your\" to make something feel urgently personal, or tells you to share/tag \"now,\" that urgency is often doing the work that facts should be doing. Pause before you tag anyone."
+  },
+  {
+    handle: "@glowupmindset",
+    handleSub: "Motivation & Self-Improvement · 1.1M followers",
+    stats: ["💬 5,432 comments", "🔁 27K shares", "❤️ 312K likes"],
+    caption: "Successful people wake up at 4:30am. If you're still sleeping in, you have to ask yourself: do you actually want this, or are you just comfortable being average? The choice is yours. Most people won't even finish reading this.",
+    loaded: ["successful people", "do you actually want this", "comfortable being average", "most people won't even finish reading this"],
+    audience: "People seeking self-improvement or feeling behind on personal goals — the post preys on ambition and fear of mediocrity to drive engagement and a sense of personal inadequacy.",
+    intendedEmotions: ["Shame", "Inadequacy", "Aspiration"],
+    technique: "This uses a false binary (early riser = successful, everyone else = \"average\") and a shaming callout (\"most people won't even finish reading this\") to make disengaging feel like proof of the post's point — a technique designed to keep you reading and reacting defensively.",
+    rewrite: "Wake-up time isn't a reliable predictor of success — routines that work vary widely from person to person. Consistent habits matter more than one specific schedule.",
+    takeaway: "Be wary of posts that shame you for not finishing them or for not matching a narrow definition of success. That shame is often the entire mechanism, not a side effect."
+  }
+];
+
+/* ============================================================
+   NAVIGATION
+   ============================================================ */
+function buildProgressRail(){
+  const rail = document.getElementById('progressRail');
+  rail.innerHTML = '';
+  stages.forEach((id, i) => {
+    const dot = document.createElement('div');
+    dot.className = 'progress-dot';
+    dot.id = 'dot-' + i;
+    rail.appendChild(dot);
+  });
+  const label = document.createElement('span');
+  label.className = 'progress-label';
+  label.id = 'progressLabel';
+  rail.appendChild(label);
+  updateProgress();
+}
+
+function updateProgress(){
+  stages.forEach((id, i) => {
+    const dot = document.getElementById('dot-' + i);
+    dot.classList.remove('active','done');
+    if(i < currentIndex) dot.classList.add('done');
+    else if(i === currentIndex) dot.classList.add('active');
+  });
+  const label = document.getElementById('progressLabel');
+  if(label) label.textContent = 'Step ' + (currentIndex+1) + ' / ' + stages.length;
+}
+
+function goTo(stageId){
+  const idx = stages.indexOf(stageId);
+  if(idx === -1) return;
+  document.getElementById(stages[currentIndex]).classList.remove('visible');
+  currentIndex = idx;
+  document.getElementById(stageId).classList.add('visible');
+  updateProgress();
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+/* ============================================================
+   METRICS
+   ============================================================ */
+function setMetric(key, value){
+  metrics[key] = value;
+  const capitalized = key.charAt(0).toUpperCase() + key.slice(1);
+  document.getElementById('m'+capitalized+'Num').textContent = value + '%';
+  document.getElementById('m'+capitalized+'Val').textContent = value + '%';
+  document.getElementById('m'+capitalized+'Fill').style.width = value + '%';
+}
+
+/* ============================================================
+   HEADLINE CHALLENGE
+   ============================================================ */
+function renderHeadlineChallenge(){
+  h1 = headlineBank[Math.floor(Math.random()*headlineBank.length)];
+  h1Selected = new Set();
+  h1Choice = null;
+
+  document.getElementById('h1-source').textContent = h1.source;
+  document.getElementById('h1-byline').textContent = h1.byline;
+
+  // render headline as clickable words
+  const headlineEl = document.getElementById('h1-headline');
+  headlineEl.innerHTML = '';
+  h1.headline.split(' ').forEach((word, i) => {
+    const span = document.createElement('span');
+    span.className = 'pickable';
+    span.textContent = word;
+    span.dataset.word = word;
+    span.onclick = () => toggleWord(span, h1Selected);
+    headlineEl.appendChild(span);
+    headlineEl.appendChild(document.createTextNode(' '));
+  });
+
+  const bodyEl = document.getElementById('h1-body');
+  bodyEl.innerHTML = '';
+  h1.body.forEach(p => {
+    const para = document.createElement('p');
+    para.textContent = p;
+    bodyEl.appendChild(para);
+  });
+
+  // reset choice buttons
+  document.querySelectorAll('#h1-click-choices .choice-btn').forEach(btn => {
+    btn.classList.remove('chosen');
+    btn.onclick = () => {
+      document.querySelectorAll('#h1-click-choices .choice-btn').forEach(b => b.classList.remove('chosen'));
+      btn.classList.add('chosen');
+      h1Choice = btn.dataset.val;
+      checkH1Ready();
+    };
+  });
+
+  document.getElementById('h1-reveal-btn').disabled = true;
+  document.getElementById('h1-reveal').classList.remove('visible');
+}
+
+function toggleWord(span, selectedSet){
+  const w = span.dataset.word;
+  if(selectedSet.has(w)){
+    selectedSet.delete(w);
+    span.classList.remove('selected');
+  } else {
+    selectedSet.add(w);
+    span.classList.add('selected');
+  }
+  checkH1Ready();
+  checkE1Ready();
+}
+
+function checkH1Ready(){
+  const btn = document.getElementById('h1-reveal-btn');
+  if(btn) btn.disabled = !(h1Choice && h1Selected.size > 0);
+}
+
+function revealHeadline(){
+  document.getElementById('h1-reveal').classList.add('visible');
+
+  // score ring animation
+  const circumference = 226;
+  const offset = circumference - (circumference * h1.accuracy / 100);
+  const ring = document.getElementById('h1-ring-fill');
+  const ringColor = h1.accuracy >= 60 ? 'var(--good)' : h1.accuracy >= 35 ? 'var(--warn)' : 'var(--bad)';
+  ring.style.stroke = ringColor;
+  setTimeout(() => { ring.style.strokeDashoffset = offset; }, 60);
+  document.getElementById('h1-ring-num').textContent = h1.accuracy + '%';
+
+  const desc = h1.accuracy >= 60 ? 'Mostly accurate framing' : h1.accuracy >= 35 ? 'Moderately exaggerated' : 'Significantly exaggerated';
+  document.getElementById('h1-score-desc').textContent = desc;
+
+  document.getElementById('h1-explanation').textContent = h1.explanation;
+
+  const tagWrap = document.getElementById('h1-mismatch-tags');
+  tagWrap.innerHTML = '';
+  h1.exaggerated.forEach(word => {
+    const tag = document.createElement('span');
+    tag.className = 'tag';
+    tag.textContent = word;
+    tagWrap.appendChild(tag);
+  });
+
+  document.getElementById('h1-rewrite').textContent = h1.rewrite;
+  document.getElementById('h1-takeaway').textContent = h1.takeaway;
+
+  setMetric('headline', h1.accuracy);
+  setMetric('source', Math.max(15, h1.accuracy - 10));
+
+  document.getElementById('h1-reveal').scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+/* ============================================================
+   EMOTION CHALLENGE
+   ============================================================ */
+function renderEmotionChallenge(){
+  e1 = emotionBank[Math.floor(Math.random()*emotionBank.length)];
+  e1Selected = new Set();
+  e1Choice = null;
+
+  document.getElementById('e1-handle').textContent = e1.handle;
+  document.getElementById('e1-handle-sub').textContent = e1.handleSub;
+
+  const captionEl = document.getElementById('e1-caption');
+  captionEl.innerHTML = '';
+  e1.caption.split(' ').forEach(word => {
+    const span = document.createElement('span');
+    span.className = 'pickable';
+    span.textContent = word;
+    span.dataset.word = word;
+    span.onclick = () => toggleWord(span, e1Selected);
+    captionEl.appendChild(span);
+    captionEl.appendChild(document.createTextNode(' '));
+  });
+
+  const statsEl = document.getElementById('e1-stats');
+  statsEl.innerHTML = '';
+  e1.stats.forEach(s => {
+    const span = document.createElement('span');
+    span.textContent = s;
+    statsEl.appendChild(span);
+  });
+
+  document.querySelectorAll('#e1-feel-choices .choice-btn').forEach(btn => {
+    btn.classList.remove('chosen');
+    btn.onclick = () => {
+      document.querySelectorAll('#e1-feel-choices .choice-btn').forEach(b => b.classList.remove('chosen'));
+      btn.classList.add('chosen');
+      e1Choice = btn.dataset.val;
+      checkE1Ready();
+    };
+  });
+
+  document.getElementById('e1-reveal-btn').disabled = true;
+  document.getElementById('e1-reveal').classList.remove('visible');
+}
+
+function checkE1Ready(){
+  const btn = document.getElementById('e1-reveal-btn');
+  if(btn) btn.disabled = !(e1Choice && e1Selected.size > 0);
+}
+
+function revealEmotion(){
+  document.getElementById('e1-reveal').classList.add('visible');
+
+  document.getElementById('e1-audience').textContent = e1.audience;
+
+  const emoWrap = document.getElementById('e1-emotion-tags');
+  emoWrap.innerHTML = '';
+  e1.intendedEmotions.forEach(em => {
+    const tag = document.createElement('span');
+    tag.className = 'tag';
+    tag.textContent = em;
+    emoWrap.appendChild(tag);
+  });
+
+  document.getElementById('e1-technique').textContent = e1.technique;
+
+  const phraseWrap = document.getElementById('e1-phrase-tags');
+  phraseWrap.innerHTML = '';
+  e1.loaded.forEach(p => {
+    const tag = document.createElement('span');
+    tag.className = 'tag';
+    tag.textContent = p;
+    phraseWrap.appendChild(tag);
+  });
+
+  document.getElementById('e1-rewrite').textContent = e1.rewrite;
+  document.getElementById('e1-takeaway').textContent = e1.takeaway;
+
+  // emotional manipulation & audience targeting scores — higher = more manipulative
+  const manipulationScore = Math.min(95, 55 + e1.loaded.length * 6);
+  const audienceScore = Math.min(95, 50 + e1.intendedEmotions.length * 10);
+  setMetric('emotion', manipulationScore);
+  setMetric('audience', audienceScore);
+
+  document.getElementById('e1-reveal').scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+/* ============================================================
+   DASHBOARD
+   ============================================================ */
+function renderDashboard(){
+  const vals = [metrics.headline, metrics.source, 100-metrics.emotion, 100-metrics.audience]
+    .filter(v => v !== null);
+  const overall = Math.round(vals.reduce((a,b)=>a+b,0) / vals.length);
+
+  const circumference = 226;
+  const offset = circumference - (circumference * overall / 100);
+  const ring = document.getElementById('dash-ring-fill');
+  const ringColor = overall >= 60 ? 'var(--good)' : overall >= 35 ? 'var(--warn)' : 'var(--bad)';
+  ring.style.stroke = ringColor;
+  ring.style.strokeDashoffset = circumference;
+  setTimeout(() => { ring.style.strokeDashoffset = offset; }, 100);
+  document.getElementById('dash-ring-num').textContent = overall + '%';
+
+  const desc = overall >= 60 ? 'Strong instincts — you caught most of the spin.'
+    : overall >= 35 ? 'Good start — a few tricks slipped past you.'
+    : 'Plenty to sharpen — the manipulation worked on this one.';
+  document.getElementById('dash-score-desc').textContent = desc;
+
+  document.getElementById('dash-redflag-text').textContent =
+    'The headline claimed "' + h1.exaggerated[0].toLowerCase() + '" language that the article itself didn\\'t support, and the social post used ' +
+    e1.loaded[0] + '-style urgency to short-circuit your judgment before you could check the facts.';
+
+  document.getElementById('dash-learned').textContent =
+    'You practiced separating a headline\\'s emotional pitch from its actual claims, and you identified specific words built to trigger ' +
+    e1.intendedEmotions.join(' and ').toLowerCase() + ' rather than to inform. That gap between feeling and fact is where most media manipulation lives.';
+}
+
+/* ============================================================
+   REPLAY
+   ============================================================ */
+function replay(){
+  metrics.headline = metrics.source = metrics.emotion = metrics.audience = null;
+  ['headline','source','emotion','audience'].forEach(k => {
+    const cap = k.charAt(0).toUpperCase()+k.slice(1);
+    document.getElementById('m'+cap+'Num').textContent = '—';
+    document.getElementById('m'+cap+'Val').textContent = '—';
+    document.getElementById('m'+cap+'Fill').style.width = '0%';
+  });
+  goTo('stage-intro');
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+buildProgressRail();
+</script>
+</body>
+</html>
