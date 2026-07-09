@@ -1,0 +1,128 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Marketing Detective</title>
+<style>
+:root{--a:#ff8a00;--bg:#121212;--card:#1d1d1d;--txt:#eee}
+body{margin:0;background:var(--bg);color:var(--txt);font-family:Arial,sans-serif}
+header{padding:18px;background:#191919;display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid var(--a)}
+button,select{padding:10px;border:none;border-radius:8px;background:var(--a);color:#fff;cursor:pointer}
+.container{max-width:1100px;margin:auto;padding:20px}
+.board{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:15px}
+.card{background:var(--card);padding:15px;border-radius:12px;border-left:5px solid var(--a)}
+.drop{min-height:80px;border:2px dashed #666;padding:10px;border-radius:10px}
+.sticky{background:#ffe082;color:#222;padding:8px;margin:6px;border-radius:8px;cursor:grab}
+#result{margin-top:20px;padding:15px;background:#202020;border-radius:10px;display:none}
+.progress{height:10px;background:#333;border-radius:10px;overflow:hidden}
+.bar{height:100%;background:var(--a);width:0%;transition:1s}
+</style>
+</head>
+<body>
+<header>
+<h2>🕵️ Marketing Detective</h2>
+<div>
+<select id="theme">
+<option value="#ff8a00">Claude Orange</option>
+<option value="#3b82f6">Blue</option>
+<option value="#10b981">Emerald</option>
+<option value="#8b5cf6">Purple</option>
+</select>
+<button onclick="loadCase()">New Case</button>
+</div>
+</header>
+
+<div class="container">
+<h3 id="company"></h3>
+<div class="progress"><div class="bar" id="bar"></div></div>
+<br>
+<div class="board">
+<div class="card">
+<h4>Case File</h4>
+<p id="details"></p>
+</div>
+<div class="card">
+<h4>Evidence</h4>
+<div id="evidence"></div>
+</div>
+<div class="card">
+<h4>Investigation Board</h4>
+<div class="drop" id="drop" ondragover="event.preventDefault()" ondrop="drop(event)">Drop clues here</div>
+</div>
+</div>
+<br>
+<select id="guess"></select>
+<button onclick="solve()">Solve Case</button>
+<div id="result"></div>
+</div>
+
+<script>
+const themes=document.getElementById("theme");
+themes.onchange=()=>document.documentElement.style.setProperty("--a",themes.value);
+
+const mistakes=[
+"Wrong Target Audience","Poor Channel Selection","Weak CTA","Budget Misallocation","No A/B Testing",
+"Bad Timing","Confusing Messaging","Ignored Customer Feedback","Low Mobile Optimization","No Retargeting"
+];
+
+const cases=[];
+for(let i=1;i<=15;i++){
+let m=mistakes[i%mistakes.length];
+cases.push({
+company:"Company "+i,
+industry:["Fashion","Tech","Food","Travel","Healthcare"][i%5],
+objective:"Increase sales",
+audience:"Young Professionals",
+channels:"Instagram, Email, Google Ads",
+budget:"$"+(10000+i*1500),
+metrics:"Reach "+(100000+i*5000)+", CTR "+(1+i/10).toFixed(1)+"%",
+comments:["Too expensive","Looks interesting","Didn't understand offer"],
+social:"Mixed engagement",
+mistake:m,
+clues:[
+"CTR looked acceptable but conversions collapsed.",
+"Customer comments hinted at the real issue.",
+"Budget report exposed an inconsistency."
+],
+explanation:"The primary issue was '"+m+"', reducing campaign effectiveness.",
+improve:"Test alternatives, optimize targeting and continuously analyze results."
+});
+}
+let current;
+
+function loadCase(){
+current=cases[Math.floor(Math.random()*cases.length)];
+company.textContent=current.company+" ("+current.industry+")";
+details.innerHTML="<b>Objective:</b> "+current.objective+"<br><b>Audience:</b> "+current.audience+"<br><b>Channels:</b> "+current.channels+"<br><b>Budget:</b> "+current.budget+"<br><b>Metrics:</b> "+current.metrics;
+evidence.innerHTML="";
+drop.innerHTML="Drop clues here";
+current.clues.forEach(c=>{
+let d=document.createElement("div");
+d.className="sticky";
+d.textContent=c;
+d.draggable=true;
+d.ondragstart=e=>e.dataTransfer.setData("text",c);
+evidence.appendChild(d);
+});
+guess.innerHTML="";
+mistakes.forEach(x=>guess.innerHTML+=`<option>${x}</option>`);
+result.style.display="none";
+bar.style.width="0%";
+setTimeout(()=>bar.style.width="100%",200);
+}
+function drop(ev){
+ev.preventDefault();
+drop.innerHTML+="<div class='sticky'>"+ev.dataTransfer.getData("text")+"</div>";
+}
+function solve(){
+result.style.display="block";
+let ok=guess.value===current.mistake;
+result.innerHTML=(ok?"✅ <h3>Case Closed!</h3>":"❌ <h3>Wrong Verdict</h3>")
++"<p><b>Correct Mistake:</b> "+current.mistake+"</p><p>"+current.explanation+"</p><p><b>Suggested Improvements:</b> "+current.improve+"</p>";
+}
+loadCase();
+</script>
+</body>
+</html>
