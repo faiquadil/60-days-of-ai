@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cognitive Pattern Explorer</title>
+<style>
+  :root{
+    --bg-1:#0f1620;
+    --bg-2:#16202c;
+    --panel:#1c2733;
+    --panel-2:#223142;
+    --accent:#7fd8c4;
+    --accent-2:#8ea9ff;
+    --accent-3:#f2b880;
+    --text:#eef3f6;
+    --text-dim:#9fb0bd;
+    --radius:18px;
+    --transition: 420ms cubic-bezier(.22,.9,.3,1);
+  }
+  [data-mode="stress"]{
+    --bg-1:#1a1013;
+    --bg-2:#241419;
+    --panel:#2a171d;
+    --panel-2:#331c23;
+    --accent:#ff8a7a;
+    --accent-2:#ffb15e;
+    --accent-3:#7fd8c4;
+    --text:#fbeee9;
+    --text-dim:#d0a99f;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    font-family:'Segoe UI', system-ui, -apple-system, Roboto, sans-serif;
+    background:radial-gradient(1200px 800px at 20% 10%, var(--bg-2), var(--bg-1));
+    color:var(--text);
+    min-height:100vh;
+    overflow-x:hidden;
+    transition:background var(--transition), color var(--transition);
+  }
+  .bg-orbs{
+    position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden;
+  }
+  .orb{
+    position:absolute; border-radius:50%; filter:blur(60px); opacity:.25;
+    animation:float 18s ease-in-out infinite;
+  }
+  .orb.o1{width:320px;height:320px;background:var(--accent);top:-80px;left:-80px;animation-duration:22s;}
+  .orb.o2{width:260px;height:260px;background:var(--accent-2);bottom:-60px;right:-60px;animation-duration:26s;}
+  .orb.o3{width:200px;height:200px;background:var(--accent-3);top:40%;left:60%;animation-duration:20s;}
+  @keyframes float{
+    0%,100%{transform:translate(0,0) scale(1);}
+    50%{transform:translate(30px,-40px) scale(1.08);}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .orb{animation:none !important;}
+    *{scroll-behavior:auto !important;}
+  }
+  .app{
+    position:relative; z-index:1;
+    max-width:900px; margin:0 auto; padding:24px 18px 60px;
+    min-height:100vh; display:flex; flex-direction:column;
+  }
+  header.top{
+    display:flex; align-items:center; justify-content:space-between;
+    gap:12px; margin-bottom:18px; flex-wrap:wrap;
+  }
+  .brand{
+    display:flex; align-items:center; gap:10px; font-weight:600; letter-spacing:.3px;
+  }
+  .brand .dot{
+    width:14px;height:14px;border-radius:50%;
+    background:linear-gradient(135deg,var(--accent),var(--accent-2));
+    box-shadow:0 0 18px var(--accent);
+  }
+  .mode-toggle{
+    display:flex; align-items:center; gap:8px;
+    background:var(--panel); padding:6px; border-radius:999px;
+    border:1px solid rgba(255,255,255,.06);
+  }
+  .mode-toggle button{
+    border:none; background:transparent; color:var(--text-dim);
+    padding:8px 14px; border-radius:999px; cursor:pointer; font-size:.85rem;
+    transition:all var(--transition);
+  }
+  .mode-toggle button.active{
+    background:linear-gradient(135deg,var(--accent),var(--accent-2));
+    color:#0f1620; font-weight:600;
+  }
+  .mode-toggle button:focus-visible, button:focus-visible, [tabindex]:focus-visible{
+    outline:2px solid var(--accent-2); outline-offset:2px;
+  }
+  .progress-wrap{
+    margin-bottom:22px;
+  }
+  .progress-track{
+    height:8px; border-radius:999px; background:rgba(255,255,255,.06); overflow:hidden;
+  }
+  .progress-fill{
+    height:100%; border-radius:999px;
+    background:linear-gradient(90deg,var(--accent),var(--accent-2));
+    transition:width var(--transition);
+  }
+  .progress-labels{
+    display:flex; justify-content:space-between; margin-top:8px; font-size:.75rem; color:var(--text-dim);
+  }
+  .progress-labels span.active{color:var(--accent);font-weight:600;}
+  main{flex:1; display:flex; flex-direction:column;}
+  .screen{
+    background:var(--panel);
+    border:1px solid rgba(255,255,255,.06);
+    border-radius:var(--radius);
+    padding:28px 24px;
+    animation:fadeIn var(--transition);
+    box-shadow:0 20px 60px rgba(0,0,0,.25);
+  }
+  @keyframes fadeIn{
+    from{opacity:0; transform:translateY(14px);}
+    to{opacity:1; transform:translateY(0);}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .screen{animation:none;}
+  }
+  h1{font-size:1.8rem; margin:0 0 6px;}
+  h2{font-size:1.4rem; margin:0 0 8px;}
+  p.lead{color:var(--text-dim); line-height:1.6; margin:0 0 20px;}
+  .btn{
+    border:none; cursor:pointer; border-radius:14px; padding:14px 22px;
+    font-size:1rem; font-weight:600; color:#0f1620;
+    background:linear-gradient(135deg,var(--accent),var(--accent-2));
+    transition:transform var(--transition), box-shadow var(--transition);
+  }
+  .btn:hover{transform:translateY(-2px); box-shadow:0 10px 24px rgba(0,0,0,.25);}
+  .btn.secondary{
+    background:transparent; color:var(--text); border:1px solid rgba(255,255,255,.18);
+  }
+  .btn:disabled{opacity:.4; cursor:not-allowed; transform:none;}
+  .btn-row{display:flex; gap:12px; margin-top:24px; flex-wrap:wrap;}
+  .options{display:flex; flex-direction:column; gap:12px; margin-top:10px;}
+  .option{
+    text-align:left; background:var(--panel-2); border:1px solid rgba(255,255,255,.06);
+    color:var(--text); border-radius:14px; padding:16px 18px; cursor:pointer;
+    transition:all var(--transition); font-size:.98rem; line-height:1.4;
+  }
+  .option:hover{border-color:var(--accent); transform:translateX(4px);}
+  .option.selected{
+    border-color:var(--accent); background:rgba(127,216,196,.1);
+    box-shadow:0 0 0 1px var(--accent);
+  }
+  .scenario-tag{
+    display:inline-block; font-size:.7rem; text-transform:uppercase; letter-spacing:.08em;
+    color:var(--accent); background:rgba(127,216,196,.12); padding:4px 10px;
+    border-radius:999px; margin-bottom:14px;
+  }
+  /* Drag and drop cards */
+  .drag-instructions{font-size:.85rem; color:var(--text-dim); margin-bottom:14px;}
+  .card-list{
+    list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:10px;
+  }
+  .card-item{
+    background:var(--panel-2); border:1px solid rgba(255,255,255,.08);
+    border-radius:14px; padding:14px 16px; cursor:grab; display:flex; align-items:center; gap:12px;
+    transition:transform var(--transition), box-shadow var(--transition), border-color var(--transition), background var(--transition);
+    user-select:none; touch-action:none;
+  }
+  .card-item .rank{
+    width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    background:rgba(255,255,255,.08); font-size:.8rem; font-weight:700; flex-shrink:0;
+  }
+  .card-item .handle{color:var(--text-dim); font-size:1.1rem; margin-left:auto; flex-shrink:0;}
+  .card-item.dragging{opacity:.4;}
+  .card-item.drag-over{border-color:var(--accent); background:rgba(127,216,196,.08);}
+  .card-item:focus-visible{outline:2px solid var(--accent-2); outline-offset:3px;}
+  .card-item.keyboard-selected{box-shadow:0 0 0 2px var(--accent); background:rgba(127,216,196,.08);}
+  /* Timeline (chapter 3) */
+  .timeline{
+    display:flex; flex-direction:column; gap:10px; margin-top:14px;
+  }
+  .timeline-track{
+    display:flex; gap:10px; flex-wrap:wrap; min-height:64px;
+    background:var(--panel-2); border-radius:14px; padding:10px;
+    border:1px dashed rgba(255,255,255,.15);
+  }
+  .timeline-track.drag-over{border-color:var(--accent); background:rgba(127,216,196,.06);}
+  .timeline-pool{
+    display:flex; gap:10px; flex-wrap:wrap; margin-top:8px;
+  }
+  .chip{
+    background:var(--panel); border:1px solid rgba(255,255,255,.1); border-radius:12px;
+    padding:10px 14px; cursor:grab; font-size:.85rem; transition:all var(--transition); touch-action:none;
+  }
+  .chip:hover{border-color:var(--accent);}
+  .chip.dragging{opacity:.35;}
+  .chip:focus-visible{outline:2px solid var(--accent-2); outline-offset:2px;}
+  .stage-label{font-size:.75rem; color:var(--text-dim); text-transform:uppercase; letter-spacing:.06em; margin-bottom:6px;}
+  /* Journal */
+  .bar-row{display:flex; align-items:center; gap:12px; margin-bottom:14px;}
+  .bar-label{width:170px; font-size:.85rem; color:var(--text-dim); flex-shrink:0;}
+  .bar-track{flex:1; height:12px; background:rgba(255,255,255,.06); border-radius:999px; overflow:hidden;}
+  .bar-fill{height:100%; border-radius:999px; background:linear-gradient(90deg,var(--accent),var(--accent-2)); width:0%; transition:width 900ms cubic-bezier(.22,.9,.3,1);}
+  .bar-pct{width:44px; text-align:right; font-size:.85rem; font-weight:600;}
+  .insight-card{
+    background:var(--panel-2); border:1px solid rgba(255,255,255,.08); border-radius:14px;
+    padding:18px; margin-top:18px; line-height:1.7;
+  }
+  .insight-card h3{margin:0 0 8px; color:var(--accent);}
+  .disclaimer{
+    margin-top:22px; font-size:.78rem; color:var(--text-dim); border-top:1px solid rgba(255,255,255,.08);
+    padding-top:14px; line-height:1.5;
+  }
+  .journal-textarea{
+    width:100%; min-height:110px; margin-top:14px; border-radius:12px; border:1px solid rgba(255,255,255,.1);
+    background:var(--panel-2); color:var(--text); padding:12px 14px; font-family:inherit; font-size:.9rem;
+    resize:vertical;
+  }
+  .journal-textarea:focus-visible{outline:2px solid var(--accent-2);}
+  footer.hint{
+    text-align:center; color:var(--text-dim); font-size:.75rem; margin-top:20px;
+  }
+  @media (max-width:600px){
+    .screen{padding:20px 16px;}
+    h1{font-size:1.5rem;}
+    .bar-label{width:120px; font-size:.78rem;}
+  }
+  .sr-only{
+    position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden;
+    clip:rect(0,0,0,0); white-space:nowrap; border:0;
+  }
+  #liveRegion{position:fixed; bottom:0; left:0;}
+</style>
+</head>
+<body data-mode="calm">
+<div class="bg-orbs" aria-hidden="true">
+  <div class="orb o1"></div>
+  <div class="orb o2"></div>
+  <div class="orb o3"></div>
+</div>
+
+<div class="app">
+  <header class="top">
+    <div class="brand"><span class="dot" aria-hidden="true"></span> Cognitive Pattern Explorer</div>
+    <div class="mode-toggle" role="group" aria-label="Ambience mode">
+      <button id="calmBtn" class="active" aria-pressed="true">Calm Mode</button>
+      <button id="stressBtn" aria-pressed="false">Stress Mode</button>
+    </div>
+  </header>
+
+  <div class="progress-wrap" id="progressWrap" hidden>
+    <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+    <div class="progress-labels">
+      <span data-step="1">Discover</span>
+      <span data-step="2">Priorities</span>
+      <span data-step="3">Mapping</span>
+      <span data-step="4">Journal</span>
+    </div>
+  </div>
+
+  <main id="main"></main>
+
+  <footer class="hint">Your reflections stay in this browser tab only. Nothing is uploaded or saved.</footer>
+</div>
+
+<div id="liveRegion" class="sr-only" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---------------- Data ---------------- */
+  const TENDENCIES = {
+    analytical: { name: "Analytical Thinker", desc: "You tend to break things into pieces, weigh evidence, and look for the most logical path before acting." },
+    emotional: { name: "Emotional Intuitive", desc: "You often lead with how something feels, trusting gut signals and the emotional texture of a situation." },
+    overthinking: { name: "Overthinking Loop Style", desc: "You often revisit decisions multiple times, searching for certainty even after a choice has been made." },
+    action: { name: "Action-First Decision Maker", desc: "You tend to move quickly, preferring to learn by doing rather than deliberating at length." },
+    balanced: { name: "Balanced Reflective Thinker", desc: "You often blend logic and feeling, pausing briefly before acting without getting stuck." }
+  };
+
+  // Chapter 1: scenario multiple choice. Each option maps to tendency weights.
+  const CH1_SCENARIOS = [
+    {
+      tag: "Scenario · Morning",
+      text: "You wake up to an unexpected email that changes your plans for the day. What's your first instinct?",
+      options: [
+        { text: "List out the new facts and figure out the most logical next step.", weights:{analytical:2} },
+        { text: "Notice the wave of feeling first — annoyance, worry, or relief — before doing anything.", weights:{emotional:2} },
+        { text: "Reread the email three or four times, imagining different ways it could play out.", weights:{overthinking:2} },
+        { text: "Reply immediately and adjust your plans on the fly.", weights:{action:2} },
+      ]
+    },
+    {
+      tag: "Scenario · Conversation",
+      text: "A close friend shares a problem they're facing. How do you usually respond?",
+      options: [
+        { text: "Ask clarifying questions and help them map out possible solutions.", weights:{analytical:2} },
+        { text: "Focus on how they're feeling and offer comfort before anything else.", weights:{emotional:2} },
+        { text: "Start worrying about their situation long after the conversation ends.", weights:{overthinking:2} },
+        { text: "Suggest a concrete next step and encourage them to try it right away.", weights:{action:2, balanced:1} },
+      ]
+    },
+    {
+      tag: "Scenario · Decision",
+      text: "You need to choose between two similar job offers. What happens next?",
+      options: [
+        { text: "Make a pros-and-cons list and compare them line by line.", weights:{analytical:2, balanced:1} },
+        { text: "Picture yourself in each role and go with the one that feels right.", weights:{emotional:2} },
+        { text: "Keep switching your answer for days, unable to fully settle.", weights:{overthinking:2} },
+        { text: "Pick one within a day or two and commit without looking back.", weights:{action:2} },
+      ]
+    },
+    {
+      tag: "Scenario · Setback",
+      text: "A project you worked hard on doesn't go as planned. Your mind goes to…",
+      options: [
+        { text: "What exactly went wrong, step by step, so you can fix it.", weights:{analytical:2} },
+        { text: "How disappointed or frustrated you feel about it.", weights:{emotional:2} },
+        { text: "Replaying the whole thing over and over, imagining alternate outcomes.", weights:{overthinking:2} },
+        { text: "What you'll try differently starting tomorrow.", weights:{action:2, balanced:1} },
+      ]
+    },
+    {
+      tag: "Scenario · Free Time",
+      text: "You have an unplanned free afternoon. What do you tend to do?",
+      options: [
+        { text: "Research something you've been curious about, methodically.", weights:{analytical:2} },
+        { text: "Follow whatever mood you're in without much planning.", weights:{emotional:2, action:1} },
+        { text: "Spend part of it thinking about tasks you should be doing instead.", weights:{overthinking:2} },
+        { text: "Take a short pause, then pick one thing calmly and go do it.", weights:{balanced:2} },
+      ]
+    }
+  ];
+
+  // Chapter 2: draggable priority ranking cards. Position (1st=highest) contributes to weights.
+  const CH2_CARDS = [
+    { id:"logic", label:"Having a clear, logical plan", weights:{analytical:3} },
+    { id:"feel", label:"Following what feels right in the moment", weights:{emotional:3} },
+    { id:"certainty", label:"Feeling fully certain before moving forward", weights:{overthinking:3} },
+    { id:"speed", label:"Moving quickly and adjusting as you go", weights:{action:3} },
+    { id:"balance", label:"Weighing options briefly, then deciding calmly", weights:{balanced:3} },
+  ];
+
+  // Chapter 3: draggable timeline mapping — chips represent thinking behaviors,
+  // dropped onto stages "Early", "Middle", "Late" of a decision process.
+  const CH3_STAGES = [
+    { id:"early", label:"Early — First noticing the decision" },
+    { id:"middle", label:"Middle — Weighing it through" },
+    { id:"late", label:"Late — Right before acting" },
+  ];
+  const CH3_CHIPS = [
+    { id:"gutcheck", label:"Gut-check feeling", stageWeights:{early:{emotional:2}, middle:{emotional:1}, late:{action:1}} },
+    { id:"listmaking", label:"Making a list of options", stageWeights:{early:{analytical:1}, middle:{analytical:2}, late:{balanced:1}} },
+    { id:"replay", label:"Replaying the same worry", stageWeights:{early:{overthinking:1}, middle:{overthinking:2}, late:{overthinking:2}} },
+    { id:"commit", label:"Committing and moving on", stageWeights:{early:{action:2}, middle:{balanced:1}, late:{action:2}} },
+    { id:"pause", label:"Taking a short deliberate pause", stageWeights:{early:{balanced:1}, middle:{balanced:2}, late:{balanced:2}} },
+    { id:"secondguess", label:"Second-guessing a choice already made", stageWeights:{early:{overthinking:1}, middle:{overthinking:1}, late:{overthinking:2}} },
+  ];
+
+  /* ---------------- State ---------------- */
+  const state = {
+    mode: "calm",
+    step: 0, // 0 = start screen
+    scores: { analytical:0, emotional:0, overthinking:0, action:0, balanced:0 },
+    ch1Answers: {},
+    ch2Order: CH2_CARDS.map(c=>c.id),
+    ch3Placement: {}, // chipId -> stageId
+    journalText: ""
+  };
+
+  const main = document.getElementById("main");
+  const progressWrap = document.getElementById("progressWrap");
+  const progressFill = document.getElementById("progressFill");
+  const liveRegion = document.getElementById("liveRegion");
+
+  function announce(msg){ liveRegion.textContent = msg; }
+
+  function addScore(weights){
+    for(const k in weights){ state.scores[k] = (state.scores[k]||0) + weights[k]; }
+  }
+
+  function updateProgress(){
+    if(state.step === 0 || state.step > 4){ progressWrap.hidden = true; return; }
+    progressWrap.hidden = false;
+    const pct = (state.step-1)/3*100;
+    progressFill.style.width = pct + "%";
+    document.querySelectorAll(".progress-labels span").forEach(el=>{
+      el.classList.toggle("active", Number(el.dataset.step) === state.step);
+    });
+  }
+
+  /* ---------------- Mode toggle ---------------- */
+  const calmBtn = document.getElementById("calmBtn");
+  const stressBtn = document.getElementById("stressBtn");
+  function setMode(mode){
+    state.mode = mode;
+    document.body.setAttribute("data-mode", mode);
+    calmBtn.classList.toggle("active", mode==="calm");
+    stressBtn.classList.toggle("active", mode==="stress");
+    calmBtn.setAttribute("aria-pressed", mode==="calm");
+    stressBtn.setAttribute("aria-pressed", mode==="stress");
+  }
+  calmBtn.addEventListener("click", ()=>setMode("calm"));
+  stressBtn.addEventListener("click", ()=>setMode("stress"));
+
+  /* ---------------- Render router ---------------- */
+  function render(){
+    updateProgress();
+    if(state.step===0) renderStart();
+    else if(state.step===1) renderChapter1();
+    else if(state.step===2) renderChapter2();
+    else if(state.step===3) renderChapter3();
+    else renderJournal();
+  }
+
+  /* ---------------- Start Screen ---------------- */
+  function renderStart(){
+    main.innerHTML = `
+      <section class="screen">
+        <h1>Welcome to your Thinking Explorer</h1>
+        <p class="lead">This is a short, calm journey through a few scenarios, card sorts, and a timeline map. There are no right or wrong answers — it's simply a way to notice patterns in how you tend to think and decide. Choose the ambience that feels right, then begin whenever you're ready.</p>
+        <div class="btn-row">
+          <button class="btn" id="startBtn">Begin Exploration</button>
+        </div>
+      </section>
+    `;
+    document.getElementById("startBtn").addEventListener("click", ()=>{
+      state.step = 1;
+      render();
+      announce("Chapter 1 started: Discover your thinking style.");
+    });
+  }
+
+  /* ---------------- Chapter 1 ---------------- */
+  let ch1Index = 0;
+  function renderChapter1(){
+    if(ch1Index >= CH1_SCENARIOS.length){
+      state.step = 2;
+      ch1Index = 0;
+      render();
+      announce("Chapter 2 started: Choose your priorities.");
+      return;
+    }
+    const scenario = CH1_SCENARIOS[ch1Index];
+    const already = state.ch1Answers[ch1Index];
+    main.innerHTML = `
+      <section class="screen">
+        <span class="scenario-tag">${scenario.tag} · ${ch1Index+1} of ${CH1_SCENARIOS.length}</span>
+        <h2>${scenario.text}</h2>
+        <div class="options" role="radiogroup" aria-label="Choose the response closest to you">
+          ${scenario.options.map((opt,i)=>`
+            <button class="option${already===i?' selected':''}" role="radio" aria-checked="${already===i}" data-index="${i}">${opt.text}</button>
+          `).join("")}
+        </div>
+        <div class="btn-row">
+          <button class="btn secondary" id="backBtn" ${ch1Index===0?'disabled':''}>Back</button>
+          <button class="btn" id="nextBtn" ${already===undefined?'disabled':''}>Continue</button>
+        </div>
+      </section>
+    `;
+    main.querySelectorAll(".option").forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        const idx = Number(btn.dataset.index);
+        state.ch1Answers[ch1Index] = idx;
+        renderChapter1();
+      });
+    });
+    document.getElementById("nextBtn").addEventListener("click", ()=>{
+      const chosen = state.ch1Answers[ch1Index];
+      addScore(scenario.options[chosen].weights);
+      ch1Index++;
+      renderChapter1();
+    });
+    document.getElementById("backBtn").addEventListener("click", ()=>{
+      if(ch1Index>0){
+        // undo previous score contribution
+        const prevIdx = ch1Index-1;
+        const prevChoice = state.ch1Answers[prevIdx];
+        if(prevChoice!==undefined){
+          const w = CH1_SCENARIOS[prevIdx].options[prevChoice].weights;
+          for(const k in w){ state.scores[k]-=w[k]; }
+        }
+        ch1Index--;
+        renderChapter1();
+      }
+    });
+  }
+
+  /* ---------------- Chapter 2: Draggable priority cards ---------------- */
+  function renderChapter2(){
+    main.innerHTML = `
+      <section class="screen">
+        <span class="scenario-tag">Chapter 2 · Priorities</span>
+        <h2>Rank what matters most to you when deciding</h2>
+        <p class="lead">Drag the cards so the one that feels most true to you sits at the top. On touch devices, press and drag. With a keyboard, focus a card and use the arrow keys to move it.</p>
+        <div class="drag-instructions">Order from most (top) to least (bottom) important.</div>
+        <ul class="card-list" id="cardList" aria-label="Priority cards, reorder with drag or arrow keys"></ul>
+        <div class="btn-row">
+          <button class="btn secondary" id="backBtn">Back</button>
+          <button class="btn" id="nextBtn">Continue</button>
+        </div>
+      </section>
+    `;
+    const list = document.getElementById("cardList");
+    renderCardList(list);
+
+    document.getElementById("nextBtn").addEventListener("click", ()=>{
+      // score based on rank position: 1st place gets full weight, decreasing after
+      state.ch2Order.forEach((id, pos)=>{
+        const card = CH2_CARDS.find(c=>c.id===id);
+        const factor = Math.max(0, (CH2_CARDS.length - pos)) / CH2_CARDS.length; // 1 down to ~0.2
+        const scaled = {};
+        for(const k in card.weights){ scaled[k] = card.weights[k]*factor; }
+        addScore(scaled);
+      });
+      state.step = 3;
+      render();
+      announce("Chapter 3 started: Map your thinking.");
+    });
+    document.getElementById("backBtn").addEventListener("click", ()=>{
+      state.step = 1;
+      ch1Index = CH1_SCENARIOS.length - 1;
+      // remove last chapter1 addition isn't needed since we go back into chapter1 flow at last question
+      render();
+    });
+  }
+
+  function renderCardList(list){
+    list.innerHTML = "";
+    state.ch2Order.forEach((id, idx)=>{
+      const card = CH2_CARDS.find(c=>c.id===id);
+      const li = document.createElement("li");
+      li.className = "card-item";
+      li.draggable = true;
+      li.tabIndex = 0;
+      li.dataset.id = id;
+      li.setAttribute("role","option");
+      li.setAttribute("aria-label", `${card.label}, rank ${idx+1} of ${state.ch2Order.length}. Use arrow up or down to move.`);
+      li.innerHTML = `<span class="rank">${idx+1}</span><span>${card.label}</span><span class="handle" aria-hidden="true">⠿</span>`;
+      attachDragHandlers(li, list, state.ch2Order, ()=>renderCardList(list));
+      attachKeyboardReorder(li, list, state.ch2Order, ()=>renderCardList(list));
+      list.appendChild(li);
+    });
+  }
+
+  /* Generic reusable drag handlers for a vertical list, native DnD + touch fallback */
+  function attachDragHandlers(item, container, orderArr, onReorder){
+    item.addEventListener("dragstart", (e)=>{
+      item.classList.add("dragging");
+      e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.setData("text/plain", item.dataset.id);
+    });
+    item.addEventListener("dragend", ()=>{
+      item.classList.remove("dragging");
+      container.querySelectorAll(".card-item").forEach(el=>el.classList.remove("drag-over"));
+    });
+    item.addEventListener("dragover", (e)=>{
+      e.preventDefault();
+      item.classList.add("drag-over");
+    });
+    item.addEventListener("dragleave", ()=> item.classList.remove("drag-over"));
+    item.addEventListener("drop", (e)=>{
+      e.preventDefault();
+      item.classList.remove("drag-over");
+      const draggedId = e.dataTransfer.getData("text/plain");
+      reorderArray(orderArr, draggedId, item.dataset.id);
+      onReorder();
+    });
+
+    // Touch fallback
+    let touchDragging = false, startY = 0, placeholder = null;
+    item.addEventListener("touchstart", (e)=>{
+      touchDragging = true;
+      startY = e.touches[0].clientY;
+      item.classList.add("dragging");
+    }, {passive:true});
+    item.addEventListener("touchmove", (e)=>{
+      if(!touchDragging) return;
+      const touch = e.touches[0];
+      const elUnder = document.elementFromPoint(touch.clientX, touch.clientY);
+      const overItem = elUnder ? elUnder.closest(".card-item") : null;
+      container.querySelectorAll(".card-item").forEach(el=>el.classList.remove("drag-over"));
+      if(overItem && overItem !== item){
+        overItem.classList.add("drag-over");
+      }
+    }, {passive:true});
+    item.addEventListener("touchend", (e)=>{
+      if(!touchDragging) return;
+      touchDragging = false;
+      item.classList.remove("dragging");
+      const touch = e.changedTouches[0];
+      const elUnder = document.elementFromPoint(touch.clientX, touch.clientY);
+      const overItem = elUnder ? elUnder.closest(".card-item") : null;
+      container.querySelectorAll(".card-item").forEach(el=>el.classList.remove("drag-over"));
+      if(overItem && overItem !== item){
+        reorderArray(orderArr, item.dataset.id, overItem.dataset.id);
+        onReorder();
+      }
+    });
+  }
+
+  function reorderArray(arr, draggedId, targetId){
+    const fromIdx = arr.indexOf(draggedId);
+    const toIdx = arr.indexOf(targetId);
+    if(fromIdx===-1||toIdx===-1) return;
+    arr.splice(fromIdx,1);
+    arr.splice(toIdx,0,draggedId);
+  }
+
+  function attachKeyboardReorder(item, container, orderArr, onReorder){
+    item.addEventListener("keydown", (e)=>{
+      const id = item.dataset.id;
+      const idx = orderArr.indexOf(id);
+      if(e.key === "ArrowUp" && idx>0){
+        e.preventDefault();
+        [orderArr[idx-1], orderArr[idx]] = [orderArr[idx], orderArr[idx-1]];
+        onReorder();
+        focusItemById(container, id);
+        announce("Moved up");
+      } else if(e.key === "ArrowDown" && idx<orderArr.length-1){
+        e.preventDefault();
+        [orderArr[idx+1], orderArr[idx]] = [orderArr[idx], orderArr[idx+1]];
+        onReorder();
+        focusItemById(container, id);
+        announce("Moved down");
+      }
+    });
+  }
+  function focusItemById(container, id){
+    const el = container.querySelector(`[data-id="${id}"]`);
+    if(el) el.focus();
+  }
+
+  /* ---------------- Chapter 3: Draggable timeline mapping ---------------- */
+  function renderChapter3(){
+    main.innerHTML = `
+      <section class="screen">
+        <span class="scenario-tag">Chapter 3 · Mapping</span>
+        <h2>Place each behavior where it tends to show up for you</h2>
+        <p class="lead">Drag each chip into the stage of a decision where it feels most true. Keyboard users: focus a chip and press Enter to cycle it to the next stage.</p>
+        <div class="timeline" id="timeline"></div>
+        <div class="stage-label" style="margin-top:16px;">Unplaced</div>
+        <div class="timeline-pool" id="pool"></div>
+        <div class="btn-row">
+          <button class="btn secondary" id="backBtn">Back</button>
+          <button class="btn" id="nextBtn" disabled>See My Journal</button>
+        </div>
+      </section>
+    `;
+    const timeline = document.getElementById("timeline");
+    const pool = document.getElementById("pool");
+
+    CH3_STAGES.forEach(stage=>{
+      const wrap = document.createElement("div");
+      wrap.innerHTML = `<div class="stage-label">${stage.label}</div>`;
+      const track = document.createElement("div");
+      track.className = "timeline-track";
+      track.dataset.stage = stage.id;
+      track.setAttribute("role","list");
+      track.setAttribute("aria-label", stage.label);
+      wrap.appendChild(track);
+      timeline.appendChild(wrap);
+      attachTrackDropHandlers(track);
+    });
+
+    function renderChips(){
+      // clear all chip containers
+      document.querySelectorAll(".timeline-track, #pool").forEach(c=>c.innerHTML="");
+      CH3_CHIPS.forEach(chip=>{
+        const el = document.createElement("div");
+        el.className = "chip";
+        el.draggable = true;
+        el.tabIndex = 0;
+        el.dataset.id = chip.id;
+        el.textContent = chip.label;
+        el.setAttribute("role","listitem");
+        el.setAttribute("aria-label", `${chip.label}. Press Enter to cycle placement.`);
+        attachChipDrag(el);
+        el.addEventListener("keydown", (e)=>{
+          if(e.key === "Enter" || e.key===" "){
+            e.preventDefault();
+            cyclePlacement(chip.id);
+            renderChips();
+            focusChipById(chip.id);
+          }
+        });
+        const targetId = state.ch3Placement[chip.id];
+        if(targetId){
+          document.querySelector(`.timeline-track[data-stage="${targetId}"]`).appendChild(el);
+        } else {
+          pool.appendChild(el);
+        }
+      });
+      checkComplete();
+    }
+
+    function focusChipById(id){
+      const el = document.querySelector(`.chip[data-id="${id}"]`);
+      if(el) el.focus();
+    }
+
+    function cyclePlacement(chipId){
+      const stages = CH3_STAGES.map(s=>s.id);
+      const current = state.ch3Placement[chipId];
+      if(!current){
+        state.ch3Placement[chipId] = stages[0];
+      } else {
+        const idx = stages.indexOf(current);
+        if(idx === stages.length-1){
+          delete state.ch3Placement[chipId];
+        } else {
+          state.ch3Placement[chipId] = stages[idx+1];
+        }
+      }
+    }
+
+    function attachChipDrag(chip){
+      chip.addEventListener("dragstart", (e)=>{
+        chip.classList.add("dragging");
+        e.dataTransfer.setData("text/plain", chip.dataset.id);
+        e.dataTransfer.effectAllowed = "move";
+      });
+      chip.addEventListener("dragend", ()=> chip.classList.remove("dragging"));
+
+      // touch fallback
+      let dragging=false;
+      chip.addEventListener("touchstart", ()=>{ dragging=true; chip.classList.add("dragging"); }, {passive:true});
+      chip.addEventListener("touchmove", (e)=>{
+        if(!dragging) return;
+        const t = e.touches[0];
+        const elUnder = document.elementFromPoint(t.clientX, t.clientY);
+        document.querySelectorAll(".timeline-track, #pool").forEach(z=>z.classList.remove("drag-over"));
+        const zone = elUnder ? elUnder.closest(".timeline-track, #pool") : null;
+        if(zone) zone.classList.add("drag-over");
+      }, {passive:true});
+      chip.addEventListener("touchend", (e)=>{
+        if(!dragging) return;
+        dragging=false;
+        chip.classList.remove("dragging");
+        const t = e.changedTouches[0];
+        const elUnder = document.elementFromPoint(t.clientX, t.clientY);
+        document.querySelectorAll(".timeline-track, #pool").forEach(z=>z.classList.remove("drag-over"));
+        const zone = elUnder ? elUnder.closest(".timeline-track, #pool") : null;
+        if(zone){
+          if(zone.id === "pool"){ delete state.ch3Placement[chip.dataset.id]; }
+          else { state.ch3Placement[chip.dataset.id] = zone.dataset.stage; }
+          renderChips();
+        }
+      });
+    }
+
+    function attachTrackDropHandlers(track){
+      track.addEventListener("dragover", (e)=>{ e.preventDefault(); track.classList.add("drag-over"); });
+      track.addEventListener("dragleave", ()=> track.classList.remove("drag-over"));
+      track.addEventListener("drop", (e)=>{
+        e.preventDefault();
+        track.classList.remove("drag-over");
+        const chipId = e.dataTransfer.getData("text/plain");
+        state.ch3Placement[chipId] = track.dataset.stage;
+        renderChips();
+      });
+    }
+    pool.addEventListener("dragover", (e)=>{ e.preventDefault(); pool.classList.add("drag-over"); });
+    pool.addEventListener("dragleave", ()=> pool.classList.remove("drag-over"));
+    pool.addEventListener("drop", (e)=>{
+      e.preventDefault();
+      pool.classList.remove("drag-over");
+      const chipId = e.dataTransfer.getData("text/plain");
+      delete state.ch3Placement[chipId];
+      renderChips();
+    });
+
+    function checkComplete(){
+      const allPlaced = CH3_CHIPS.every(c=>state.ch3Placement[c.id]);
+      document.getElementById("nextBtn").disabled = !allPlaced;
+    }
+
+    renderChips();
+
+    document.getElementById("nextBtn").addEventListener("click", ()=>{
+      CH3_CHIPS.forEach(chip=>{
+        const stage = state.ch3Placement[chip.id];
+        if(stage && chip.stageWeights[stage]){
+          addScore(chip.stageWeights[stage]);
+        }
+      });
+      state.step = 4;
+      render();
+      announce("Your reflection journal is ready.");
+    });
+    document.getElementById("backBtn").addEventListener("click", ()=>{
+      state.step = 2;
+      render();
+    });
+  }
+
+  /* ---------------- Final Journal ---------------- */
+  function renderJournal(){
+    const total = Object.values(state.scores).reduce((a,b)=>a+b,0) || 1;
+    const percentages = {};
+    for(const k in state.scores){
+      percentages[k] = Math.round((state.scores[k]/total)*100);
+    }
+    const sorted = Object.keys(percentages).sort((a,b)=>percentages[b]-percentages[a]);
+    const top = sorted[0];
+    const second = sorted[1];
+
+    main.innerHTML = `
+      <section class="screen">
+        <span class="scenario-tag">Final Reflection</span>
+        <h2>Your Thinking Pattern Snapshot</h2>
+        <p class="lead">This is a reflective snapshot, not a diagnosis. It simply mirrors the tendencies that came through in how you responded today.</p>
+        <div id="bars"></div>
+        <div class="insight-card">
+          <h3>${TENDENCIES[top].name}</h3>
+          <p>${TENDENCIES[top].desc} This pattern showed up most across today's scenarios, card choices, and timeline mapping.</p>
+          <p>You also carry notable traces of <strong>${TENDENCIES[second].name}</strong> — ${TENDENCIES[second].desc.toLowerCase()}</p>
+        </div>
+        <label for="journalText" style="display:block; margin-top:20px; font-size:.9rem; color:var(--text-dim);">Optional: jot a private reflection on what resonated (stays only in this tab)</label>
+        <textarea id="journalText" class="journal-textarea" placeholder="What surprised you about this snapshot?"></textarea>
+        <div class="btn-row">
+          <button class="btn secondary" id="restartBtn">Start Over</button>
+        </div>
+        <div class="disclaimer">
+          This tool is for self-reflection and educational purposes only. It is not a psychological test, clinical assessment, or diagnostic instrument, and it does not measure mental health. If you have concerns about your wellbeing, consider speaking with a qualified professional.
+        </div>
+      </section>
+    `;
+
+    const barsWrap = document.getElementById("bars");
+    sorted.forEach(key=>{
+      const row = document.createElement("div");
+      row.className = "bar-row";
+      row.innerHTML = `
+        <div class="bar-label">${TENDENCIES[key].name}</div>
+        <div class="bar-track"><div class="bar-fill" data-target="${percentages[key]}"></div></div>
+        <div class="bar-pct">${percentages[key]}%</div>
+      `;
+      barsWrap.appendChild(row);
+    });
+    requestAnimationFrame(()=>{
+      barsWrap.querySelectorAll(".bar-fill").forEach(el=>{
+        el.style.width = el.dataset.target + "%";
+      });
+    });
+
+    document.getElementById("journalText").addEventListener("input", (e)=>{
+      state.journalText = e.target.value;
+    });
+    document.getElementById("journalText").value = state.journalText;
+
+    document.getElementById("restartBtn").addEventListener("click", ()=>{
+      if(confirm("Start over? This will clear your current snapshot.")){
+        state.step = 0;
+        state.scores = { analytical:0, emotional:0, overthinking:0, action:0, balanced:0 };
+        state.ch1Answers = {};
+        state.ch2Order = CH2_CARDS.map(c=>c.id);
+        state.ch3Placement = {};
+        state.journalText = "";
+        ch1Index = 0;
+        render();
+        announce("Restarted.");
+      }
+    });
+  }
+
+  /* ---------------- Init ---------------- */
+  setMode("calm");
+  render();
+})();
+</script>
+</body>
+</html>
