@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Workflow Architect — MERN Portfolio Build</title>
+<style>
+  :root{
+    --bg:#0d1117;
+    --surface:#141a22;
+    --surface-2:#1b232d;
+    --line:#26313c;
+    --text:#dfe6ed;
+    --muted:#8b98a5;
+    --mongo:#47a248;
+    --react:#61dafb;
+    --node:#3c873a;
+    --warn:#e8c547;
+    --radius:10px;
+    --mono:'JetBrains Mono','Fira Code',ui-monospace,SFMono-Regular,Menlo,monospace;
+    --sans:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    --display:'Space Grotesk','Inter',sans-serif;
+  }
+  html.light{
+    --bg:#f4f6f8;
+    --surface:#ffffff;
+    --surface-2:#eef1f4;
+    --line:#dbe1e7;
+    --text:#161b22;
+    --muted:#5b6773;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:var(--sans);
+    transition:background .3s ease,color .3s ease;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{background:var(--mongo);color:#04140a;}
+
+  /* ---------- top bar ---------- */
+  header.topbar{
+    position:sticky;top:0;z-index:50;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:14px 24px;
+    background:color-mix(in srgb, var(--bg) 85%, transparent);
+    backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--line);
+  }
+  .brand{display:flex;align-items:center;gap:10px;font-family:var(--display);font-weight:600;letter-spacing:.2px;}
+  .brand .dot{width:10px;height:10px;border-radius:50%;background:var(--mongo);box-shadow:0 0 12px var(--mongo);}
+  .brand small{display:block;color:var(--muted);font-family:var(--mono);font-size:11px;font-weight:400;}
+  .topbar-actions{display:flex;gap:8px;align-items:center;}
+  .icon-btn{
+    background:var(--surface-2);border:1px solid var(--line);color:var(--text);
+    padding:8px 12px;border-radius:8px;cursor:pointer;font-size:13px;font-family:var(--sans);
+    display:flex;align-items:center;gap:6px;transition:.2s;
+  }
+  .icon-btn:hover{border-color:var(--mongo);color:var(--mongo);}
+
+  /* ---------- hero ---------- */
+  .hero{
+    max-width:1180px;margin:0 auto;padding:64px 24px 40px;
+    display:grid;grid-template-columns:1.2fr .8fr;gap:40px;align-items:center;
+  }
+  .hero .eyebrow{
+    font-family:var(--mono);color:var(--mongo);font-size:12px;letter-spacing:2px;text-transform:uppercase;
+  }
+  .hero h1{
+    font-family:var(--display);font-size:clamp(32px,4.2vw,52px);line-height:1.05;margin:10px 0 16px;font-weight:600;
+  }
+  .hero h1 span{color:var(--mongo);}
+  .hero p.lead{color:var(--muted);font-size:16px;line-height:1.6;max-width:52ch;}
+  .hero-stats{display:flex;gap:28px;margin-top:26px;}
+  .hero-stats div b{font-family:var(--mono);font-size:22px;display:block;color:var(--react);}
+  .hero-stats div span{font-size:12px;color:var(--muted);}
+
+  .commit-preview{
+    font-family:var(--mono);font-size:12.5px;background:var(--surface);border:1px solid var(--line);
+    border-radius:var(--radius);padding:18px;line-height:2;position:relative;overflow:hidden;
+  }
+  .commit-preview .git-line{color:var(--muted);}
+  .commit-preview .git-line b{color:var(--mongo);}
+  .commit-preview .cursor{display:inline-block;width:7px;height:14px;background:var(--react);animation:blink 1s step-end infinite;vertical-align:-2px;}
+  @keyframes blink{50%{opacity:0;}}
+
+  /* ---------- progress bar ---------- */
+  .progress-wrap{max-width:1180px;margin:0 auto;padding:0 24px 30px;}
+  .progress-bar{height:6px;border-radius:4px;background:var(--surface-2);overflow:hidden;border:1px solid var(--line);}
+  .progress-fill{height:100%;background:linear-gradient(90deg,var(--mongo),var(--react));width:0%;transition:width .5s ease;}
+  .progress-label{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:6px;display:flex;justify-content:space-between;}
+
+  /* ---------- git timeline (signature element) ---------- */
+  .timeline-section{max-width:1180px;margin:0 auto;padding:20px 24px 80px;}
+  .section-title{font-family:var(--display);font-size:26px;margin-bottom:6px;font-weight:600;}
+  .section-sub{color:var(--muted);font-size:14px;margin-bottom:30px;}
+
+  .git-graph{position:relative;padding-left:36px;}
+  .git-graph::before{
+    content:'';position:absolute;left:11px;top:6px;bottom:6px;width:2px;
+    background:linear-gradient(var(--mongo),var(--react));opacity:.5;
+  }
+  .commit{position:relative;margin-bottom:14px;}
+  .commit-node{
+    position:absolute;left:-36px;top:14px;width:24px;height:24px;border-radius:50%;
+    background:var(--surface);border:2px solid var(--line);display:flex;align-items:center;justify-content:center;
+    font-family:var(--mono);font-size:10px;color:var(--muted);cursor:pointer;transition:.2s;
+  }
+  .commit.done .commit-node{border-color:var(--mongo);background:var(--mongo);color:#04140a;}
+  .commit.active .commit-node{border-color:var(--react);box-shadow:0 0 0 4px color-mix(in srgb, var(--react) 25%, transparent);}
+
+  .commit-card{
+    background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+    cursor:pointer;transition:.25s;overflow:hidden;
+  }
+  .commit-card:hover{border-color:var(--mongo);}
+  .commit-head{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;gap:12px;}
+  .commit-head-left{display:flex;align-items:center;gap:12px;}
+  .commit-hash{font-family:var(--mono);color:var(--muted);font-size:12px;}
+  .commit-title{font-family:var(--display);font-size:17px;font-weight:600;}
+  .commit-meta{display:flex;gap:8px;align-items:center;}
+  .badge{font-family:var(--mono);font-size:10.5px;padding:3px 8px;border-radius:20px;border:1px solid var(--line);color:var(--muted);}
+  .badge.time{color:var(--warn);border-color:color-mix(in srgb, var(--warn) 40%, var(--line));}
+  .chevron{transition:.25s;color:var(--muted);}
+  .commit.open .chevron{transform:rotate(180deg);}
+  .checkbox{
+    width:18px;height:18px;border-radius:5px;border:1px solid var(--line);flex:none;
+    display:flex;align-items:center;justify-content:center;font-size:11px;
+  }
+  .commit.done .checkbox{background:var(--mongo);border-color:var(--mongo);color:#04140a;}
+
+  .commit-body{max-height:0;overflow:hidden;transition:max-height .35s ease;}
+  .commit.open .commit-body{max-height:4000px;}
+  .commit-body-inner{padding:0 18px 22px;border-top:1px solid var(--line);}
+
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:16px;}
+  @media(max-width:760px){.grid-2{grid-template-columns:1fr;} .hero{grid-template-columns:1fr;}}
+
+  .block{background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:14px 16px;}
+  .block h4{margin:0 0 8px;font-size:12.5px;text-transform:uppercase;letter-spacing:1px;color:var(--mongo);font-family:var(--mono);}
+  .block ul{margin:0;padding-left:18px;font-size:13.5px;line-height:1.7;color:var(--text);}
+  .block p{margin:0;font-size:13.5px;line-height:1.6;color:var(--text);}
+
+  .tool-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px dashed var(--line);font-size:13.5px;}
+  .tool-row:last-child{border-bottom:none;}
+  .tool-row .why{color:var(--muted);font-size:12px;}
+
+  .prompt-box{
+    background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:12px 14px;
+    font-family:var(--mono);font-size:12.5px;color:var(--react);position:relative;margin-top:6px;white-space:pre-wrap;
+  }
+  .copy-btn{
+    position:absolute;top:8px;right:8px;background:var(--surface-2);border:1px solid var(--line);
+    color:var(--muted);font-size:10.5px;padding:4px 8px;border-radius:6px;cursor:pointer;font-family:var(--sans);
+  }
+  .copy-btn:hover{color:var(--mongo);border-color:var(--mongo);}
+
+  .note-area{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:8px;color:var(--text);
+    font-family:var(--sans);font-size:13px;padding:10px;resize:vertical;min-height:60px;margin-top:6px;}
+
+  .bookmark-btn{background:none;border:none;cursor:pointer;color:var(--muted);font-size:16px;}
+  .bookmark-btn.active{color:var(--warn);}
+
+  /* decision tree */
+  .decision-tree{display:flex;flex-direction:column;gap:10px;font-family:var(--mono);font-size:13px;}
+  .dt-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+  .dt-q{background:var(--surface-2);border:1px solid var(--line);padding:8px 12px;border-radius:6px;}
+  .dt-arrow{color:var(--muted);}
+  .dt-opt{background:var(--bg);border:1px solid var(--mongo);color:var(--mongo);padding:6px 10px;border-radius:6px;cursor:default;}
+
+  /* comparison table */
+  table.compare{width:100%;border-collapse:collapse;font-size:13px;margin-top:10px;}
+  table.compare th,table.compare td{border:1px solid var(--line);padding:8px 10px;text-align:left;}
+  table.compare th{background:var(--surface-2);font-family:var(--mono);font-size:11.5px;text-transform:uppercase;color:var(--muted);}
+
+  /* footer summary sections */
+  .summary-section{max-width:1180px;margin:0 auto;padding:0 24px 60px;}
+  .summary-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;}
+  @media(max-width:900px){.summary-grid{grid-template-columns:1fr 1fr;}}
+  @media(max-width:600px){.summary-grid{grid-template-columns:1fr;}}
+  .summary-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:20px;}
+  .summary-card h3{font-family:var(--display);font-size:16px;margin:0 0 10px;color:var(--react);}
+  .summary-card ul{margin:0;padding-left:18px;font-size:13px;line-height:1.8;color:var(--text);}
+  .keyword-chip{display:inline-block;background:var(--surface-2);border:1px solid var(--line);padding:4px 10px;border-radius:20px;font-family:var(--mono);font-size:11.5px;margin:3px 4px 0 0;color:var(--muted);}
+
+  .print-btn{margin-top:20px;}
+  footer.site-footer{text-align:center;padding:40px 24px 60px;color:var(--muted);font-size:12px;font-family:var(--mono);}
+
+  @media print{
+    header.topbar,.icon-btn,.progress-wrap,.copy-btn,.bookmark-btn,.no-print{display:none!important;}
+    .commit-body{max-height:none!important;}
+    body{background:#fff;color:#000;}
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="dot"></span>
+    <div>AI Workflow Architect
+      <small>MERN Stack · Portfolio / Personal Project</small>
+    </div>
+  </div>
+  <div class="topbar-actions no-print">
+    <button class="icon-btn" onclick="window.print()">🖨 Print</button>
+    <button class="icon-btn" id="resetBtn">↺ Reset progress</button>
+    <button class="icon-btn" id="themeBtn">☾ Dark</button>
+  </div>
+</header>
+
+<section class="hero">
+  <div>
+    <div class="eyebrow">end-to-end build plan</div>
+    <h1>Ship a MERN portfolio project that actually <span>gets you hired.</span></h1>
+    <p class="lead">A commit-by-commit roadmap from idea to deployed app — MongoDB, Express, React, and Node — with the AI tools, prompts, and pitfalls for every stage.</p>
+    <div class="hero-stats">
+      <div><b>8</b><span>stages</span></div>
+      <div><b>~55–75h</b><span>est. total time</span></div>
+      <div><b id="doneCount">0</b><span>stages done</span></div>
+    </div>
+  </div>
+  <div class="commit-preview">
+    <div class="git-line">$ git log --oneline --graph</div>
+    <div class="git-line">* <b>8f1c0a2</b> deploy: production release</div>
+    <div class="git-line">* <b>6b2e9f1</b> test: e2e + unit coverage</div>
+    <div class="git-line">* <b>4a0d7c3</b> feat: integrate frontend ↔ API</div>
+    <div class="git-line">* <b>2c9b1e0</b> feat: build React UI</div>
+    <div class="git-line">* <b>19ab4f2</b> feat: Express/Node API + auth</div>
+    <div class="git-line">* <b>0e7d3a1</b> chore: MongoDB schema design</div>
+    <div class="git-line">* <b>c3f0021</b> design: wireframes + UX</div>
+    <div class="git-line">* <b>a001100</b> plan: scope + case study<span class="cursor"></span></div>
+  </div>
+</section>
+
+<div class="progress-wrap">
+  <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+  <div class="progress-label"><span id="progressText">0 of 8 stages complete</span><span>Progress saves automatically</span></div>
+</div>
+
+<section class="timeline-section">
+  <div class="section-title">Workflow Timeline</div>
+  <div class="section-sub">Click a commit to expand. Check the box when a stage is done — your place is saved locally.</div>
+  <div class="git-graph" id="graph"></div>
+</section>
+
+<section class="timeline-section" style="padding-top:0;">
+  <div class="section-title">Decision Tree — Which AI tool do I open first?</div>
+  <div class="section-sub">A quick router for the most common "which tool" moments in this workflow.</div>
+  <div class="decision-tree">
+    <div class="dt-row"><span class="dt-q">Need to think through scope/features?</span><span class="dt-arrow">→</span><span class="dt-opt">Claude (planning chat)</span></div>
+    <div class="dt-row"><span class="dt-q">Need a wireframe or UI mockup fast?</span><span class="dt-arrow">→</span><span class="dt-opt">v0.dev / Figma AI</span></div>
+    <div class="dt-row"><span class="dt-q">Writing schema, API routes, or React components?</span><span class="dt-arrow">→</span><span class="dt-opt">Claude Code / Cursor</span></div>
+    <div class="dt-row"><span class="dt-q">Stuck on a runtime bug or stack trace?</span><span class="dt-arrow">→</span><span class="dt-opt">Claude Code (agentic debug)</span></div>
+    <div class="dt-row"><span class="dt-q">Need tests written for existing code?</span><span class="dt-arrow">→</span><span class="dt-opt">Claude Code / Copilot</span></div>
+    <div class="dt-row"><span class="dt-q">Writing README / case study copy?</span><span class="dt-arrow">→</span><span class="dt-opt">Claude (writing mode)</span></div>
+  </div>
+
+  <div class="section-title" style="margin-top:44px;">Tool Comparison at a Glance</div>
+  <table class="compare">
+    <tr><th>Tool</th><th>Best for</th><th>Strength</th><th>Watch out for</th></tr>
+    <tr><td>Claude (chat/Code)</td><td>Planning, full-stack code, debugging, docs</td><td>Long-context reasoning, multi-file edits</td><td>Verify env-specific assumptions</td></tr>
+    <tr><td>Cursor</td><td>In-editor AI pair programming</td><td>Fast inline completions across files</td><td>Can overwrite code silently — review diffs</td></tr>
+    <tr><td>v0.dev</td><td>React/Tailwind UI scaffolding</td><td>Instant component generation</td><td>Generic layouts unless prompted specifically</td></tr>
+    <tr><td>GitHub Copilot</td><td>Line-by-line autocomplete</td><td>Fast for boilerplate</td><td>Weaker at architectural decisions</td></tr>
+    <tr><td>Postman AI / Insomnia</td><td>API testing & docs</td><td>Auto-generates test assertions</td><td>Still needs manual edge-case coverage</td></tr>
+  </table>
+</section>
+
+<section class="summary-section">
+  <div class="section-title">Workflow Summary</div>
+  <p style="color:var(--muted);max-width:70ch;">You'll go from a scoped idea to a deployed, tested MERN application in eight stages — using AI at each step to plan, scaffold, code, debug, and document, while you drive every architectural decision.</p>
+
+  <div class="summary-grid" style="margin-top:20px;">
+    <div class="summary-card">
+      <h3>Recommended AI Stack</h3>
+      <ul>
+        <li>Claude (chat) — planning & docs</li>
+        <li>Claude Code — implementation & debugging</li>
+        <li>v0.dev — UI scaffolding</li>
+        <li>Postman AI — API testing</li>
+        <li>GitHub Copilot — inline completion (optional)</li>
+      </ul>
+    </div>
+    <div class="summary-card">
+      <h3>Learning Resources</h3>
+      <ul>
+        <li>MongoDB University (free courses)</li>
+        <li>Odin Project — Full Stack JS path</li>
+        <li>Express/Node official docs</li>
+        <li>React.dev (official beta docs)</li>
+        <li>Fireship YouTube — MERN crash courses</li>
+      </ul>
+    </div>
+    <div class="summary-card">
+      <h3>Communities</h3>
+      <ul>
+        <li>r/webdev, r/reactjs</li>
+        <li>Dev.to MERN tag</li>
+        <li>Discord: Reactiflux</li>
+        <li>freeCodeCamp forum</li>
+        <li>Hashnode dev blogs</li>
+      </ul>
+    </div>
+    <div class="summary-card">
+      <h3>Search Keywords</h3>
+      <div>
+        <span class="keyword-chip">MERN portfolio project ideas</span>
+        <span class="keyword-chip">JWT auth Express</span>
+        <span class="keyword-chip">MongoDB schema design</span>
+        <span class="keyword-chip">React deployment Vercel</span>
+        <span class="keyword-chip">Node.js REST API best practices</span>
+      </div>
+    </div>
+    <div class="summary-card">
+      <h3>Additional AI Prompts</h3>
+      <ul>
+        <li>"Review my Express API for security gaps"</li>
+        <li>"Suggest 3 unique features for a MERN [X] app"</li>
+        <li>"Write a case-study README for this project"</li>
+        <li>"Generate Jest tests for this controller"</li>
+      </ul>
+    </div>
+    <div class="summary-card">
+      <h3>Future Automation Opportunities</h3>
+      <ul>
+        <li>CI/CD pipeline with GitHub Actions</li>
+        <li>Automated changelog generation</li>
+        <li>AI code review bot on pull requests</li>
+        <li>Auto-generated API docs from routes</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<footer class="site-footer">AI Workflow Architect — generated for your MERN Stack Portfolio Project workflow. Data stored locally in your browser only.</footer>
+
+<script>
+const STAGES = [
+  {
+    hash:"a001100", title:"Plan & Scope", time:"3–5h",
+    objectives:["Define the project idea and the specific problem it demonstrates","Identify the 2–3 skills you most want to showcase to employers","Set a realistic feature scope (MVP vs stretch goals)"],
+    tasks:["Write a one-paragraph project pitch","List core user stories","Decide MVP feature list vs 'nice to have'","Sketch the data model at a high level"],
+    tools:[
+      {name:"Claude (chat)", why:"Strong at structured brainstorming and pressure-testing scope creep"},
+      {name:"Notion AI", why:"Good for turning notes into a living project doc"}
+    ],
+    alt:["ChatGPT", "Linear (for issue tracking)"],
+    prompts:["I'm building a MERN portfolio project to show [skill]. Help me scope an MVP I can realistically finish in 2 weeks, and list 3 stretch features I should cut for v1."],
+    best:["Write down what you're NOT building — scope creep kills portfolio projects","Pick a problem you can explain in one sentence"],
+    mistakes:["Choosing a to-do app or clone with no unique angle","Scoping something that needs 5+ weeks for a portfolio piece"],
+    outputs:["1-page project brief","User story list","Rough data model sketch"],
+    tips:["Time-box planning to one sitting — perfect scope doesn't exist, shipped scope does"]
+  },
+  {
+    hash:"c3f0021", title:"Design & UX", time:"4–6h",
+    objectives:["Define the core screens and user flow","Establish a simple, consistent visual language"],
+    tasks:["Wireframe key screens (list, detail, form, auth)","Choose a color palette and type scale","Map navigation between screens"],
+    tools:[
+      {name:"v0.dev", why:"Generates real React+Tailwind components from a text description, not just static mockups"},
+      {name:"Figma (+ AI plugins)", why:"Best for precise layout and reusable component design"}
+    ],
+    alt:["Excalidraw (quick wireframes)","Uizard"],
+    prompts:["Generate a React + Tailwind dashboard layout for a [project type] app with a sidebar nav, a list view, and a detail panel. Keep it minimal, no template-y gradients."],
+    best:["Design mobile-first even for a desktop-first audience","Reuse 3–4 components everywhere instead of one-off screens"],
+    mistakes:["Spending days perfecting Figma before writing any code","Over-designing screens that won't ship in the MVP"],
+    outputs:["Wireframes for 4–6 key screens","A defined color/type system"],
+    tips:["Generate UI in v0, then hand-edit for your actual brand — don't ship it verbatim"]
+  },
+  {
+    hash:"0e7d3a1", title:"Database & Schema Design", time:"3–4h",
+    objectives:["Model your MongoDB collections and relationships","Decide on embedding vs referencing for related data"],
+    tasks:["Define Mongoose schemas for each collection","Add validation rules and indexes","Seed sample data for local development"],
+    tools:[
+      {name:"Claude Code", why:"Can generate Mongoose schemas plus seed scripts in one pass, matching your data model"},
+      {name:"MongoDB Compass", why:"Visual inspection of your actual collections while iterating"}
+    ],
+    alt:["Studio 3T","Robo 3T"],
+    prompts:["Design a Mongoose schema for a [entity] with fields for X, Y, Z, proper validation, and a reference relationship to [other entity]. Include an index for the most common query."],
+    best:["Index fields you'll filter/sort on often","Prefer referencing over deep embedding for data that grows unbounded"],
+    mistakes:["Embedding arrays that can grow indefinitely (e.g. comments) inside a parent doc","Skipping schema validation and relying only on frontend checks"],
+    outputs:["Mongoose models","Seed script with sample data","ERD-style diagram of relationships"],
+    tips:["Seed realistic data early so your UI doesn't only work with 3 test rows"]
+  },
+  {
+    hash:"19ab4f2", title:"Backend: API & Auth", time:"8–12h",
+    objectives:["Build a RESTful Express API for all core resources","Implement authentication and authorization"],
+    tasks:["Set up Express project structure (routes/controllers/models)","Implement CRUD endpoints","Add JWT-based auth + password hashing","Add input validation and error handling middleware"],
+    tools:[
+      {name:"Claude Code", why:"Handles multi-file backend scaffolding, keeps route/controller/model conventions consistent"},
+      {name:"Postman AI", why:"Auto-generates request collections and basic test assertions per endpoint"}
+    ],
+    alt:["Insomnia","Thunder Client (VS Code)"],
+    prompts:["Build an Express router + controller for [resource] with full CRUD, JWT auth middleware protecting write routes, and centralized error handling. Follow REST conventions."],
+    best:["Centralize error handling in one middleware, don't repeat try/catch everywhere","Hash passwords with bcrypt, never store plaintext"],
+    mistakes:["Storing JWT secrets in code instead of environment variables","No input validation, trusting client-sent data directly"],
+    outputs:["Working REST API with auth","Postman collection for all endpoints","'.env.example' file documenting required vars"],
+    tips:["Test every endpoint with Postman before touching the frontend — isolates bugs faster"]
+  },
+  {
+    hash:"2c9b1e0", title:"Frontend: React UI", time:"10–14h",
+    objectives:["Build the React interface matching your wireframes","Manage client-side state and routing"],
+    tasks:["Set up React Router for navigation","Build reusable components (forms, cards, nav)","Wire up state management (Context or Redux Toolkit)","Style with Tailwind or CSS modules"],
+    tools:[
+      {name:"Claude Code", why:"Good at generating component trees that stay consistent with existing patterns in your repo"},
+      {name:"v0.dev", why:"Quick first draft of complex components (tables, modals, forms)"}
+    ],
+    alt:["Cursor","GitHub Copilot"],
+    prompts:["Create a React component for [feature] using functional components and hooks, matching this existing component's styling conventions: [paste snippet]. Handle loading and error states."],
+    best:["Keep components small and single-purpose","Handle loading/error/empty states for every data-driven view"],
+    mistakes:["Forgetting empty and error states — only designing the happy path","Prop-drilling deeply instead of using Context for shared state"],
+    outputs:["Component library for the app","Working routed pages","Connected forms with client-side validation"],
+    tips:["Build one full vertical slice (list → detail → edit) before building every screen"]
+  },
+  {
+    hash:"4a0d7c3", title:"Integration", time:"6–8h",
+    objectives:["Connect the React frontend to the Express API","Handle real-world network conditions gracefully"],
+    tasks:["Set up an API client (fetch/axios) with base config","Wire auth tokens into requests","Handle loading, error, and empty states end-to-end","Configure CORS and environment variables"],
+    tools:[
+      {name:"Claude Code", why:"Can trace a bug across frontend + backend files simultaneously, which is where most integration bugs live"},
+      {name:"Postman AI", why:"Confirms API behavior independently before blaming the frontend"}
+    ],
+    alt:["Insomnia","Browser DevTools Network tab"],
+    prompts:["My React app gets a CORS error calling this Express endpoint. Here's my server CORS config and my fetch call — what's misconfigured?"],
+    best:["Centralize your API base URL in one config file","Store tokens in httpOnly cookies where possible, not localStorage, for better security"],
+    mistakes:["Hardcoding localhost URLs that break in production","Not handling token expiry — silent failures instead of re-login prompts"],
+    outputs:["Fully connected app (frontend ↔ backend)","Working auth flow end-to-end","'.env' configs for dev and prod"],
+    tips:["Test integration against a deployed backend early, not just localhost"]
+  },
+  {
+    hash:"6b2e9f1", title:"Testing & QA", time:"6–8h",
+    objectives:["Verify core flows work reliably","Catch regressions before deployment"],
+    tasks:["Write unit tests for controllers/utilities","Write integration tests for key API routes","Manually QA critical user flows","Fix bugs found during QA"],
+    tools:[
+      {name:"Claude Code", why:"Generates Jest/Supertest test suites that match your actual route signatures"},
+      {name:"Jest + Supertest", why:"Standard, well-documented testing stack for Node/Express APIs"}
+    ],
+    alt:["Vitest","Cypress (for e2e)"],
+    prompts:["Write Jest + Supertest tests for this Express route, covering the success case, an invalid-input case, and an unauthorized-access case: [paste route code]."],
+    best:["Prioritize testing auth and payment-like flows over trivial getters","Test edge cases: empty inputs, huge inputs, unauthorized access"],
+    mistakes:["Only testing the happy path","Treating 100% coverage as the goal instead of testing what actually breaks"],
+    outputs:["Test suite with meaningful coverage","List of fixed bugs","QA checklist for future changes"],
+    tips:["Write the test for a bug before fixing it — proves the fix actually works"]
+  },
+  {
+    hash:"8f1c0a2", title:"Deploy & Document", time:"4–6h",
+    objectives:["Ship the app to production","Make the project easy for a recruiter or hiring manager to evaluate"],
+    tasks:["Deploy backend (Render/Railway) and frontend (Vercel/Netlify)","Set production environment variables","Write a README with setup, architecture, and screenshots","Record a short demo or GIF walkthrough"],
+    tools:[
+      {name:"Claude (chat)", why:"Great at turning technical decisions into a clear, recruiter-friendly case-study README"},
+      {name:"Render / Vercel", why:"Fast, free-tier friendly deploys for MERN apps"}
+    ],
+    alt:["Railway","Netlify","Fly.io"],
+    prompts:["Write a README for my MERN project aimed at recruiters: include the problem it solves, tech stack, architecture decisions, and setup instructions. Keep it scannable, not a wall of text."],
+    best:["Include a live demo link and screenshots at the very top of the README","Explain one interesting technical decision, not just 'what' but 'why'"],
+    mistakes:["Shipping with the default Create React App README","No live demo link — recruiters rarely clone repos to run them locally"],
+    outputs:["Live deployed app (frontend + backend)","Polished README with screenshots/GIF","Portfolio site entry linking the project"],
+    tips:["Add the project to your portfolio and LinkedIn the same day you deploy — momentum matters"]
+  }
+];
+
+const STORE_KEY = "wf_mern_portfolio_v1";
+function loadState(){
+  try{ return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; }catch(e){ return {}; }
+}
+function saveState(state){ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
+let state = loadState();
+
+function render(){
+  const graph = document.getElementById('graph');
+  graph.innerHTML = '';
+  let doneCount = 0;
+  let firstOpenSet = false;
+
+  STAGES.forEach((s, i) => {
+    const st = state[i] || {done:false, open:false, note:''};
+    if(st.done) doneCount++;
+
+    const commit = document.createElement('div');
+    commit.className = 'commit' + (st.done ? ' done':'') + (st.open ? ' open':'');
+    if(!st.done && !firstOpenSet && doneCount === i){ commit.classList.add('active'); firstOpenSet = true; }
+
+    commit.innerHTML = `
+      <div class="commit-node">${st.done ? '✓' : (i+1)}</div>
+      <div class="commit-card">
+        <div class="commit-head" data-toggle="${i}">
+          <div class="commit-head-left">
+            <div class="checkbox" data-check="${i}">${st.done?'✓':''}</div>
+            <div>
+              <div class="commit-title">${s.title}</div>
+              <div class="commit-hash">${s.hash}</div>
+            </div>
+          </div>
+          <div class="commit-meta">
+            <span class="badge time">⏱ ${s.time}</span>
+            <button class="bookmark-btn ${st.bookmarked?'active':''}" data-bookmark="${i}" title="Bookmark">★</button>
+            <span class="chevron">▾</span>
+          </div>
+        </div>
+        <div class="commit-body">
+          <div class="commit-body-inner">
+            <div class="grid-2">
+              <div class="block"><h4>Objectives</h4><ul>${s.objectives.map(o=>`<li>${o}</li>`).join('')}</ul></div>
+              <div class="block"><h4>Tasks</h4><ul>${s.tasks.map(o=>`<li>${o}</li>`).join('')}</ul></div>
+            </div>
+            <div class="grid-2">
+              <div class="block">
+                <h4>Best AI Tools</h4>
+                ${s.tools.map(t=>`<div class="tool-row"><strong>${t.name}</strong></div><div class="why">${t.why}</div>`).join('')}
+                <div style="margin-top:8px;"><span style="font-size:11.5px;color:var(--muted);">Alternatives: ${s.alt.join(', ')}</span></div>
+              </div>
+              <div class="block">
+                <h4>Prompt Example</h4>
+                ${s.prompts.map((p,pi)=>`<div class="prompt-box">${p}<button class="copy-btn" data-copy="${i}-${pi}">copy</button></div>`).join('')}
+              </div>
+            </div>
+            <div class="grid-2">
+              <div class="block"><h4>Best Practices</h4><ul>${s.best.map(o=>`<li>${o}</li>`).join('')}</ul></div>
+              <div class="block"><h4>Common Mistakes</h4><ul>${s.mistakes.map(o=>`<li>${o}</li>`).join('')}</ul></div>
+            </div>
+            <div class="grid-2">
+              <div class="block"><h4>Expected Outputs</h4><ul>${s.outputs.map(o=>`<li>${o}</li>`).join('')}</ul></div>
+              <div class="block"><h4>Efficiency Tips</h4><ul>${s.tips.map(o=>`<li>${o}</li>`).join('')}</ul></div>
+            </div>
+            <div class="block" style="margin-top:16px;">
+              <h4>Your Notes</h4>
+              <textarea class="note-area" placeholder="Jot notes for this stage..." data-note="${i}">${st.note||''}</textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    graph.appendChild(commit);
+  });
+
+  document.getElementById('doneCount').textContent = doneCount;
+  const pct = Math.round((doneCount / STAGES.length) * 100);
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressText').textContent = `${doneCount} of ${STAGES.length} stages complete`;
+
+  // wire events
+  graph.querySelectorAll('[data-toggle]').forEach(el=>{
+    el.addEventListener('click', (e)=>{
+      if(e.target.closest('[data-check]') || e.target.closest('[data-bookmark]')) return;
+      const idx = el.getAttribute('data-toggle');
+      state[idx] = state[idx] || {done:false, open:false, note:''};
+      state[idx].open = !state[idx].open;
+      saveState(state); render();
+    });
+  });
+  graph.querySelectorAll('[data-check]').forEach(el=>{
+    el.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      const idx = el.getAttribute('data-check');
+      state[idx] = state[idx] || {done:false, open:false, note:''};
+      state[idx].done = !state[idx].done;
+      saveState(state); render();
+    });
+  });
+  graph.querySelectorAll('[data-bookmark]').forEach(el=>{
+    el.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      const idx = el.getAttribute('data-bookmark');
+      state[idx] = state[idx] || {done:false, open:false, note:''};
+      state[idx].bookmarked = !state[idx].bookmarked;
+      saveState(state); render();
+    });
+  });
+  graph.querySelectorAll('[data-note]').forEach(el=>{
+    el.addEventListener('input', ()=>{
+      const idx = el.getAttribute('data-note');
+      state[idx] = state[idx] || {done:false, open:false, note:''};
+      state[idx].note = el.value;
+      saveState(state);
+    });
+  });
+  graph.querySelectorAll('[data-copy]').forEach(el=>{
+    el.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      const box = el.parentElement;
+      const text = box.textContent.replace('copy','').trim();
+      navigator.clipboard.writeText(text).then(()=>{
+        el.textContent = 'copied!';
+        setTimeout(()=>{ el.textContent='copy'; }, 1200);
+      });
+    });
+  });
+}
+
+document.getElementById('resetBtn').addEventListener('click', ()=>{
+  if(confirm('Reset all progress, notes, and bookmarks?')){
+    state = {};
+    saveState(state);
+    render();
+  }
+});
+
+const themeBtn = document.getElementById('themeBtn');
+function applyTheme(light){
+  document.documentElement.classList.toggle('light', light);
+  themeBtn.textContent = light ? '☀ Light' : '☾ Dark';
+  localStorage.setItem('wf_theme', light ? 'light' : 'dark');
+}
+themeBtn.addEventListener('click', ()=>{
+  applyTheme(!document.documentElement.classList.contains('light'));
+});
+applyTheme(localStorage.getItem('wf_theme') === 'light');
+
+render();
+</script>
+</body>
+</html>
