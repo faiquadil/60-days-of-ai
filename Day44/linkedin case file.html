@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The LinkedIn Case File</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#13161B;
+    --paper:#EDE7DA;
+    --card:#1B1F26;
+    --card-light:#F5F1E7;
+    --red:#C6432B;
+    --red-bright:#E4572E;
+    --green:#3E8F6B;
+    --muted:#8B93A0;
+    --muted-dark:#5B6270;
+    --line:#2B303A;
+    --gold:#C9A24B;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--ink);
+    color:var(--card-light);
+    font-family:'IBM Plex Sans',sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{background:var(--red);color:#fff;}
+
+  .stamp-header{
+    padding:56px 24px 32px;
+    text-align:center;
+    border-bottom:1px solid var(--line);
+    position:relative;
+  }
+  .case-no{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:.18em;
+    color:var(--muted);
+    text-transform:uppercase;
+  }
+  h1.title{
+    font-family:'Newsreader',serif;
+    font-weight:600;
+    font-size:clamp(32px,7vw,52px);
+    margin:10px 0 6px;
+    letter-spacing:-0.01em;
+  }
+  h1.title em{
+    font-style:italic;
+    color:var(--red-bright);
+  }
+  .subtitle{
+    color:var(--muted);
+    font-size:15px;
+    max-width:520px;
+    margin:0 auto;
+    line-height:1.5;
+  }
+
+  nav.tabs{
+    display:flex;
+    overflow-x:auto;
+    gap:2px;
+    background:var(--line);
+    position:sticky;
+    top:0;
+    z-index:10;
+    -ms-overflow-style:none;
+    scrollbar-width:none;
+  }
+  nav.tabs::-webkit-scrollbar{display:none;}
+  nav.tabs button{
+    flex:1 0 auto;
+    padding:14px 18px;
+    background:var(--card);
+    color:var(--muted);
+    border:none;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    cursor:pointer;
+    white-space:nowrap;
+    transition:background .2s, color .2s;
+  }
+  nav.tabs button.active{
+    background:var(--red-bright);
+    color:#fff;
+  }
+
+  main{max-width:760px;margin:0 auto;padding:32px 20px 90px;}
+  section.panel{display:none;animation:fade .35s ease;}
+  section.panel.active{display:block;}
+  @keyframes fade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+
+  h2.section-title{
+    font-family:'Newsreader',serif;
+    font-size:28px;
+    font-weight:600;
+    margin:0 0 4px;
+    color:var(--card-light);
+  }
+  .section-kicker{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    color:var(--red-bright);
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    margin-bottom:18px;
+    display:block;
+  }
+
+  .overall-score{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:4px;
+    padding:22px;
+    text-align:center;
+    margin-bottom:28px;
+  }
+  .overall-score .num{
+    font-family:'Newsreader',serif;
+    font-size:56px;
+    font-weight:600;
+    color:var(--red-bright);
+    line-height:1;
+  }
+  .overall-score .num span{font-size:22px;color:var(--muted);}
+  .overall-score .label{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--muted);
+    margin-top:8px;
+  }
+
+  .card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:4px;
+    padding:20px 20px 18px;
+    margin-bottom:18px;
+  }
+  .card-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    margin-bottom:10px;
+    gap:12px;
+  }
+  .card-head h3{
+    font-family:'Newsreader',serif;
+    font-size:19px;
+    font-weight:600;
+    margin:0;
+  }
+  .score-pill{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:13px;
+    background:var(--ink);
+    border:1px solid var(--line);
+    padding:3px 10px;
+    border-radius:20px;
+    color:var(--red-bright);
+    white-space:nowrap;
+  }
+
+  .redline{
+    background:rgba(198,67,43,0.08);
+    border-left:3px solid var(--red);
+    padding:10px 14px;
+    margin:10px 0;
+    font-family:'Newsreader',serif;
+    font-style:italic;
+    font-size:15.5px;
+    color:#E9CFC4;
+    position:relative;
+  }
+  .redline::before{
+    content:"“";
+    color:var(--red-bright);
+    font-family:'Newsreader',serif;
+  }
+  .redline::after{content:"”";color:var(--red-bright);font-family:'Newsreader',serif;}
+  .redline .strike{text-decoration:line-through;text-decoration-color:var(--red-bright);opacity:.6;}
+
+  .why, .cost{
+    font-size:14.5px;
+    line-height:1.6;
+    margin:10px 0;
+    color:#C9CDD6;
+  }
+  .why b, .cost b{color:var(--card-light);}
+  .tag{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    color:var(--muted);
+    display:inline-block;
+    margin-right:6px;
+  }
+
+  .options-grid{display:grid;gap:14px;margin:16px 0;}
+  .option{
+    background:var(--ink);
+    border:1px solid var(--line);
+    border-radius:4px;
+    padding:16px;
+  }
+  .option .tag-label{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10.5px;
+    color:var(--gold);
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    margin-bottom:6px;
+    display:block;
+  }
+  .option .headline-text{
+    font-family:'Newsreader',serif;
+    font-size:18px;
+    line-height:1.4;
+    color:var(--card-light);
+  }
+  .option .use-when{
+    margin-top:8px;
+    font-size:13px;
+    color:var(--muted);
+    line-height:1.5;
+  }
+
+  .about-block{
+    background:var(--ink);
+    border:1px solid var(--line);
+    border-radius:4px;
+    padding:18px;
+    margin:14px 0;
+    font-size:15px;
+    line-height:1.7;
+    white-space:pre-wrap;
+  }
+  .about-block .line-label{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10.5px;
+    color:var(--green);
+    display:block;
+    margin-bottom:4px;
+    letter-spacing:.08em;
+  }
+
+  .keyword-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;}
+  .keyword-list span{
+    background:rgba(62,143,107,0.12);
+    color:var(--green);
+    border:1px solid rgba(62,143,107,0.35);
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    padding:4px 10px;
+    border-radius:20px;
+  }
+
+  .before-after{
+    display:grid;
+    gap:10px;
+    margin:12px 0;
+  }
+  .ba-row{
+    background:var(--ink);
+    border-radius:4px;
+    border:1px solid var(--line);
+    padding:12px 14px;
+  }
+  .ba-row .b{color:var(--muted);font-size:13.5px;text-decoration:line-through;text-decoration-color:var(--red);}
+  .ba-row .a{color:var(--card-light);font-size:14.5px;margin-top:6px;font-weight:500;}
+  .arrow{color:var(--red-bright);font-family:'IBM Plex Mono',monospace;font-size:12px;margin-right:6px;}
+
+  .skills-cols{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:14px 0;}
+  @media(max-width:520px){.skills-cols{grid-template-columns:1fr;}}
+  .skills-cols .col h4{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    margin:0 0 8px;
+  }
+  .add h4{color:var(--green);}
+  .remove h4{color:var(--red-bright);}
+  .skills-cols ol, .skills-cols ul{margin:0;padding-left:18px;font-size:14px;line-height:1.9;color:#C9CDD6;}
+  .pin-row{
+    margin-top:14px;
+    font-size:13.5px;
+    color:var(--gold);
+    font-family:'IBM Plex Mono',monospace;
+  }
+
+  table.scorecard{width:100%;border-collapse:collapse;margin:18px 0;}
+  table.scorecard th, table.scorecard td{
+    text-align:left;
+    padding:12px 10px;
+    border-bottom:1px solid var(--line);
+    font-size:14px;
+  }
+  table.scorecard th{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    color:var(--muted);
+  }
+  table.scorecard td.before{color:var(--muted);}
+  table.scorecard td.after{color:var(--green);font-weight:600;}
+  table.scorecard td.change{color:var(--gold);font-family:'IBM Plex Mono',monospace;}
+  .overall-row td{font-weight:700;color:var(--card-light);border-top:2px solid var(--red-bright);}
+
+  .day-card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-left:3px solid var(--gold);
+    border-radius:4px;
+    padding:18px 20px;
+    margin-bottom:14px;
+  }
+  .day-card .day-num{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    color:var(--gold);
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    margin-bottom:6px;
+    display:block;
+  }
+  .day-card h4{
+    font-family:'Newsreader',serif;
+    font-size:18px;
+    margin:0 0 10px;
+  }
+  .checklist{list-style:none;padding:0;margin:0;}
+  .checklist li{
+    font-size:14px;
+    padding:6px 0 6px 22px;
+    position:relative;
+    color:#C9CDD6;
+  }
+  .checklist li::before{
+    content:"☐";
+    position:absolute;left:0;color:var(--gold);
+  }
+  .post-draft{
+    background:var(--ink);
+    border:1px dashed var(--line);
+    border-radius:4px;
+    padding:14px;
+    font-size:14px;
+    line-height:1.6;
+    white-space:pre-wrap;
+    margin-top:8px;
+    color:var(--card-light);
+  }
+  .char-count{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    color:var(--muted);
+    margin-top:6px;
+  }
+  .formula{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12.5px;
+    background:rgba(201,162,75,0.1);
+    color:var(--gold);
+    padding:8px 12px;
+    border-radius:4px;
+    margin:8px 0;
+    display:block;
+  }
+
+  .summary-card{
+    background:var(--card-light);
+    color:var(--ink);
+    border-radius:8px;
+    padding:32px 28px;
+    position:relative;
+    overflow:hidden;
+  }
+  .summary-card::before{
+    content:"";
+    position:absolute;top:0;left:0;right:0;height:6px;
+    background:var(--red-bright);
+  }
+  .summary-card .kicker{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--red);
+  }
+  .summary-card h3{
+    font-family:'Newsreader',serif;
+    font-size:24px;
+    margin:8px 0 18px;
+  }
+  .summary-scores{display:flex;gap:24px;align-items:center;margin-bottom:20px;}
+  .summary-scores .box{text-align:center;}
+  .summary-scores .box .n{font-family:'Newsreader',serif;font-size:38px;font-weight:600;}
+  .summary-scores .before-box .n{color:#9B3B2A;}
+  .summary-scores .after-box .n{color:var(--green);}
+  .summary-scores .box .l{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:#6B6355;}
+  .summary-scores .sep{font-size:22px;color:#B0A991;}
+  .summary-card ol{padding-left:20px;font-size:14.5px;line-height:1.9;}
+  .summary-card .highlight-line{
+    margin-top:16px;
+    padding:12px 14px;
+    background:rgba(198,67,43,0.08);
+    border-left:3px solid var(--red);
+    font-style:italic;
+    font-family:'Newsreader',serif;
+    font-size:15px;
+  }
+  .download-btn{
+    margin-top:20px;
+    display:inline-block;
+    background:var(--ink);
+    color:var(--card-light);
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    padding:10px 18px;
+    border-radius:4px;
+    border:none;
+    cursor:pointer;
+  }
+
+  .foot-note{
+    text-align:center;
+    color:var(--muted-dark);
+    font-size:12px;
+    font-family:'IBM Plex Mono',monospace;
+    padding:30px 20px 10px;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    section.panel{animation:none;}
+  }
+</style>
+</head>
+<body>
+
+<header class="stamp-header">
+  <span class="case-no">CASE FILE // PROFILE AUDIT</span>
+  <h1 class="title">The LinkedIn <em>Roast &amp; Rebuild</em></h1>
+  <p class="subtitle">B.Tech CS student, Integral University — targeting internships &amp; entry-level roles in Data Science / ML / Software Dev.</p>
+</header>
+
+<nav class="tabs" id="tabs">
+  <button class="active" data-panel="roast">01 Roast</button>
+  <button data-panel="rebuild">02 Rebuild</button>
+  <button data-panel="scorecard">03 Scorecard</button>
+  <button data-panel="plan">04 7-Day Plan</button>
+  <button data-panel="summary">05 Summary</button>
+</nav>
+
+<main>
+
+<!-- ROAST -->
+<section class="panel active" id="roast">
+  <span class="section-kicker">Part 1</span>
+  <h2 class="section-title">The Roast</h2>
+  <div class="overall-score">
+    <div class="num">31<span>/100</span></div>
+    <div class="label">Overall Profile Strength — Before</div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h3>Headline</h3><span class="score-pill">3/10</span></div>
+    <div class="redline">Aspiring Software Developer | Python Enthusiast | HTML | CSS | Java | Exploring</div>
+    <div class="why"><span class="tag">❌ Problem</span> This is a list of nouns, not a pitch. "Aspiring" and "Exploring" are the two words doing the most damage — they tell a recruiter you don't think you're ready yet, before they've even opened your profile.</div>
+    <div class="why"><span class="tag">🧠 Why it hurts</span> Recruiters skim headlines for 2-3 seconds in search results. Yours reads as "student who hasn't picked a lane" — HTML, CSS, Java, and Python enthusiast all crammed together signals unfocused, not versatile.</div>
+    <div class="cost"><span class="tag">🔍 Invisible cost</span> You don't show up for "Data Science Intern" or "ML" searches because those exact keywords aren't in your headline — LinkedIn's search weighs the headline heavily. You're invisible to the exact recruiters looking for what you actually did at Analyze Infotech.</div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h3>About — First 2 Lines</h3><span class="score-pill">2/10</span></div>
+    <div class="redline">I am a B.Tech Computer Science student at Integral University with a strong interest in Software Development, Full-Stack Web Development, and Artificial Intelligence.</div>
+    <div class="why"><span class="tag">❌ Problem</span> This is the exact sentence that appears before "see more" — and it's pure biography. Zero hook, zero reason to click.</div>
+    <div class="why"><span class="tag">🧠 Why it hurts</span> "Strong interest in" is interest, not capability. Recruiters read this as: nothing has been built yet.</div>
+    <div class="cost"><span class="tag">🔍 Invisible cost</span> You already have real proof — 3-5 ML projects, real datasets — and it's buried below the fold where 90% of viewers never scroll to see it.</div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h3>About — Full Section</h3><span class="score-pill">2/10</span></div>
+    <div class="why"><span class="tag">❌ Problem</span> One sentence total. No story, no proof, no numbers, no call to action.</div>
+    <div class="why"><span class="tag">🧠 Why it hurts</span> A one-line About reads as "didn't bother," even if the reason is just not knowing what to write. Recruiters equate effort on the profile with effort on the job.</div>
+    <div class="cost"><span class="tag">🔍 Invisible cost</span> Your internship achievements (3-5 datasets, predictive models, dashboards) never get mentioned here at all — the single highest-intent section of your entire profile is empty of evidence.</div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h3>Experience (Analyze Infotech)</h3><span class="score-pill">4/10</span></div>
+    <div class="redline">Worked on Python-based data analysis and machine learning projects. <span class="strike">Performed</span> data cleaning, preprocessing, and exploratory data analysis (EDA).</div>
+    <div class="why"><span class="tag">❌ Problem</span> Every bullet starts with a passive, low-energy verb — "Worked on," "Performed," "Created," "Collaborated." These describe duties, not outcomes.</div>
+    <div class="why"><span class="tag">🧠 Why it hurts</span> A recruiter reads task lists as job-description copy-paste — it doesn't tell them what you're actually capable of producing, or how well you did it.</div>
+    <div class="cost"><span class="tag">🔍 Invisible cost</span> No numbers anywhere — not even a rough one ("3-5 datasets," "improved accuracy by X%"). Quantified bullets are what get an ATS and a human recruiter to pause; unquantified ones get skimmed past in under a second.</div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h3>Skills &amp; Keywords</h3><span class="score-pill">5/10</span></div>
+    <div class="why"><span class="tag">❌ Problem</span> Decent raw list (Python, SQL, ML, Scikit-learn) but it's flat — no prioritization, and "MERN Stack (Learning)" and "HTML/CSS/JS" sit next to your data science skills, splitting your identity in two directions.</div>
+    <div class="why"><span class="tag">🧠 Why it hurts</span> Recruiters searching "Data Science Intern" filter by top skills. If your top 3 pinned skills aren't the ones matching the role, you rank lower in search even with the right words buried further down.</div>
+    <div class="cost"><span class="tag">🔍 Invisible cost</span> "Learning" next to MERN Stack — while honest — reads as unfinished to an ATS keyword scan. It doesn't hurt you as a person, but it can hurt you as a search result.</div>
+  </div>
+</section>
+
+<!-- REBUILD -->
+<section class="panel" id="rebuild">
+  <span class="section-kicker">Part 2</span>
+  <h2 class="section-title">The Rebuild</h2>
+
+  <div class="card">
+    <h3 style="font-family:'Newsreader',serif;font-size:20px;margin-top:0;">Headline — 3 Options</h3>
+    <code class="formula">[Role/Identity] | [Who I Help or What I Do] | [Proof or Differentiator]</code>
+    <div class="options-grid">
+      <div class="option">
+        <span class="tag-label">Option 1 — Keyword-Optimized</span>
+        <div class="headline-text">Data Science &amp; Machine Learning Intern | Python, Scikit-learn, EDA &amp; Predictive Modeling | B.Tech CS Student</div>
+        <div class="use-when"><b>Use when:</b> applying directly to jobs/internships through LinkedIn search or recruiter InMail — this maximizes how often you surface in recruiter keyword searches for "Data Science Intern," "Machine Learning," "Python."</div>
+      </div>
+      <div class="option">
+        <span class="tag-label">Option 2 — Value-Proposition</span>
+        <div class="headline-text">Turning Messy Data into Predictive Models | ML &amp; Data Analysis | 3+ Real-World Projects Delivered</div>
+        <div class="use-when"><b>Use when:</b> you want people to understand outcomes at a glance — good for connection requests and profile visits from founders or small teams hiring for project-based work.</div>
+      </div>
+      <div class="option">
+        <span class="tag-label">Option 3 — Authority Style</span>
+        <div class="headline-text">B.Tech CS Student Building in Data Science &amp; ML | Ex-Analyze Infotech | Documenting What I Learn</div>
+        <div class="use-when"><b>Use when:</b> you start posting content — this signals you're building a public track record, which invites recruiters and peers to follow your work over time.</div>
+      </div>
+    </div>
+    <div class="why">Since your goal is <b>landing an internship/job</b>, start with <b>Option 1</b> — it's built entirely from search terms recruiters actually type in.</div>
+  </div>
+
+  <div class="card">
+    <h3 style="font-family:'Newsreader',serif;font-size:20px;">About Section — Full Rewrite</h3>
+    <div class="about-block">
+<span class="line-label">HOOK (before "see more")</span>I turn messy, real-world datasets into models that actually predict something useful.
+
+<span class="line-label" style="margin-top:14px;">STORY</span>I'm a B.Tech Computer Science student at Integral University, currently focused on Data Science and Machine Learning. During my internship at Analyze Infotech, I worked hands-on with real datasets — the messy kind, not the cleaned-up Kaggle kind — and learned that most of the real work happens before you ever touch a model.
+
+<span class="line-label" style="margin-top:14px;">PROOF</span>In ~2 months there, I:
+→ Cleaned and prepped 3-5 real-world datasets for analysis
+→ Built and evaluated predictive models using Scikit-learn
+→ Designed interactive dashboards to turn raw data into visuals stakeholders could actually use
+→ Documented findings so the work was usable by others, not just me
+
+<span class="line-label" style="margin-top:14px;">CTA</span>Open to Data Science / ML internship and entry-level opportunities — feel free to message me or check my featured projects below.</div>
+    <div class="why"><b>Why this works:</b> the hook makes a claim, not a bio-fact — it earns the click on "see more." The story reframes "intern" as someone who already understands the unglamorous reality of the job (cleaning data), which reads as maturity beyond your year. The proof section uses your real numbers instead of vague duties. The CTA tells a recruiter exactly what to do next.</div>
+    <div class="keyword-list">
+      <span>Data Science</span><span>Machine Learning</span><span>Python</span><span>Scikit-learn</span><span>EDA</span><span>Predictive Modeling</span><span>Data Visualization</span><span>Internship</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 style="font-family:'Newsreader',serif;font-size:20px;">Experience — Top Entry Rewrite</h3>
+    <div class="before-after">
+      <div class="ba-row"><div class="b"><span class="arrow">BEFORE →</span>Worked on Python-based data analysis and machine learning projects.</div><div class="a"><span class="arrow">AFTER →</span>Delivered 3-5 end-to-end data analysis &amp; ML projects using Python, from raw data to final model.</div></div>
+      <div class="ba-row"><div class="b"><span class="arrow">BEFORE →</span>Performed data cleaning, preprocessing, and exploratory data analysis (EDA).</div><div class="a"><span class="arrow">AFTER →</span>Cleaned and preprocessed real-world datasets, uncovering patterns through EDA that directly shaped model design.</div></div>
+      <div class="ba-row"><div class="b"><span class="arrow">BEFORE →</span>Built predictive models using Scikit-learn and evaluated model performance.</div><div class="a"><span class="arrow">AFTER →</span>Built and evaluated predictive models with Scikit-learn, comparing performance across multiple approaches to select the best fit.</div></div>
+      <div class="ba-row"><div class="b"><span class="arrow">BEFORE →</span>Created interactive dashboards and data visualizations using Python libraries.</div><div class="a"><span class="arrow">AFTER →</span>Designed interactive dashboards and visualizations that made complex findings understandable to non-technical stakeholders.</div></div>
+      <div class="ba-row"><div class="b"><span class="arrow">BEFORE →</span>Collaborated on real-world datasets and documented project findings.</div><div class="a"><span class="arrow">AFTER →</span>Documented project findings clearly enough for teammates to pick up and continue the work independently.</div></div>
+    </div>
+    <div class="why"><b>Why this works:</b> every bullet now leads with what was <i>produced</i>, not what task was performed. "Delivered," "Designed," "Built" replace "Worked on," "Created," "Performed" — active verbs that imply ownership. Where you didn't give me a hard number, I used "3-5" (your real estimate) instead of inventing a percentage — never fabricate what you didn't tell me.</div>
+  </div>
+
+  <div class="card">
+    <h3 style="font-family:'Newsreader',serif;font-size:20px;">Skills Recommendations</h3>
+    <div class="skills-cols">
+      <div class="col add">
+        <h4>Add (priority order)</h4>
+        <ol>
+          <li>Machine Learning</li>
+          <li>Data Analysis</li>
+          <li>Python (Programming Language)</li>
+          <li>Scikit-learn</li>
+          <li>Exploratory Data Analysis</li>
+          <li>Data Visualization</li>
+          <li>Pandas</li>
+          <li>NumPy</li>
+          <li>SQL</li>
+          <li>Predictive Modeling</li>
+        </ol>
+      </div>
+      <div class="col remove">
+        <h4>Remove / de-emphasize</h4>
+        <ul>
+          <li>MERN Stack (Learning) — split identity, hurts search focus</li>
+          <li>JavaScript — same reason unless pivoting to full-stack</li>
+          <li>Generic "Exploring" type skill tags</li>
+        </ul>
+      </div>
+    </div>
+    <div class="pin-row">📌 Pin to top: Machine Learning · Python · Data Analysis</div>
+    <div class="why" style="margin-top:12px;"><b>Why:</b> your target goal is Data Science / ML internships — every skill you pin should match that search intent. HTML/CSS/JS and MERN can stay lower on your profile (they're not lies, just not your headline story right now) but shouldn't compete for the top 3 slots recruiters actually see first.</div>
+  </div>
+</section>
+
+<!-- SCORECARD -->
+<section class="panel" id="scorecard">
+  <span class="section-kicker">Part 3</span>
+  <h2 class="section-title">Before vs After</h2>
+  <table class="scorecard">
+    <thead><tr><th>Section</th><th>Before</th><th>After</th><th>Change</th></tr></thead>
+    <tbody>
+      <tr><td>Headline</td><td class="before">3/10</td><td class="after">8/10</td><td class="change">+5</td></tr>
+      <tr><td>About (Hook)</td><td class="before">2/10</td><td class="after">8/10</td><td class="change">+6</td></tr>
+      <tr><td>About (Full)</td><td class="before">2/10</td><td class="after">9/10</td><td class="change">+7</td></tr>
+      <tr><td>Experience</td><td class="before">4/10</td><td class="after">8/10</td><td class="change">+4</td></tr>
+      <tr><td>Skills / Keywords</td><td class="before">5/10</td><td class="after">8/10</td><td class="change">+3</td></tr>
+      <tr class="overall-row"><td>OVERALL</td><td class="before">31/100</td><td class="after">82/100</td><td class="change">+51</td></tr>
+    </tbody>
+  </table>
+  <div class="why">These scores reflect what's in front of a recruiter for 3-8 seconds — not your actual ability. The gap between 31 and 82 isn't new skill, it's the same real work, finally visible and searchable.</div>
+</section>
+
+<!-- PLAN -->
+<section class="panel" id="plan">
+  <span class="section-kicker">Part 4</span>
+  <h2 class="section-title">7-Day Activation Plan</h2>
+
+  <div class="day-card">
+    <span class="day-num">Day 1</span>
+    <h4>Make All Profile Changes</h4>
+    <ul class="checklist">
+      <li>Update headline to Option 1 (keyword-optimized)</li>
+      <li>Replace About section with the rewrite</li>
+      <li>Rewrite Analyze Infotech experience bullets</li>
+      <li>Reorder skills — pin Machine Learning, Python, Data Analysis</li>
+      <li>Remove or move down MERN Stack / JS if not job-relevant right now</li>
+      <li>Add a profile photo + banner if missing (recruiter-facing, not casual)</li>
+    </ul>
+  </div>
+
+  <div class="day-card">
+    <span class="day-num">Day 2</span>
+    <h4>Publish Post #1 — "I Just Rebuilt My LinkedIn"</h4>
+    <div class="post-draft">I just rewrote my entire LinkedIn profile — and it made me realize how much of my real work was invisible.
+
+For 2 months at Analyze Infotech, I cleaned messy datasets, built predictive models with Scikit-learn, and turned raw numbers into dashboards people could actually use.
+
+None of that showed up on my profile before. Just "aspiring developer" and one vague sentence about my "interests."
+
+Lesson: nobody can see your work if you don't describe it like work.
+
+Still learning, still building — but now it actually shows.
+
+#DataScience #MachineLearning #OpenToWork</div>
+    <div class="char-count">≈560 characters — well under the 1300 limit, room to expand if you want.</div>
+  </div>
+
+  <div class="day-card">
+    <span class="day-num">Day 3</span>
+    <h4>Send 10 Strategic Connection Requests</h4>
+    <div class="why"><b>Who to target:</b> Data Science/ML recruiters and hiring managers at mid-size product companies and startups, ML engineers at companies you'd want to intern at, alumni from Integral University now working in Data Science/ML.</div>
+    <div class="post-draft">Hi [Name], I'm a CS student building in Data Science/ML — recently wrapped an internship doing EDA and predictive modeling. Would love to connect and learn from your experience in the space.</div>
+    <div class="char-count">≈220 characters — under the 300 limit.</div>
+  </div>
+
+  <div class="day-card">
+    <span class="day-num">Day 4</span>
+    <h4>Comment on 5 Posts in Your Target Space</h4>
+    <code class="formula">Value Comment = Agree + Add Insight + Ask a Question</code>
+    <div class="why">Example: "Agree that clean data beats a fancy model every time — in my last project, EDA alone changed which features we even used. Curious how you handle that trade-off when deadlines are tight?" This shows real understanding, not just "Great post!"</div>
+  </div>
+
+  <div class="day-card">
+    <span class="day-num">Day 5</span>
+    <h4>Publish Post #2 — Lessons-Learned / Hot Take</h4>
+    <div class="post-draft">Unpopular opinion: the hardest part of my ML internship wasn't the modeling. It was the data cleaning.
+
+Everyone talks about Scikit-learn and neural nets. Nobody talks about spending 3 days figuring out why a dataset had 4 different date formats in the same column.
+
+If you're a student learning ML and skipping the "boring" EDA step — you're skipping the actual job.
+
+What's the messiest dataset you've ever had to clean?
+
+#MachineLearning #DataScience #StudentPerspective</div>
+    <div class="char-count">≈540 characters.</div>
+  </div>
+
+  <div class="day-card">
+    <span class="day-num">Day 6</span>
+    <h4>Engage + Send 5 More Connections</h4>
+    <ul class="checklist">
+      <li>Reply to every comment on both posts within a few hours of posting</li>
+      <li>Send 5 more connection requests using the Day 3 template</li>
+      <li>Follow up with anyone who accepted your Day 3 requests but hasn't engaged</li>
+    </ul>
+  </div>
+
+  <div class="day-card">
+    <span class="day-num">Day 7</span>
+    <h4>Review Profile Views &amp; Acceptance Rate</h4>
+    <div class="why"><b>What the numbers mean:</b> Profile views spiking after Day 1-2 = your headline/keywords are working in search. Connection acceptance rate above 40-50% = your targeting and message are landing. Low post engagement but high profile views = your content isn't the draw yet, but your keyword visibility is — keep posting consistently, engagement compounds over weeks, not days.</div>
+    <div class="why"><b>What to adjust:</b> if acceptance rate is low, tighten who you're targeting. If profile views are low, revisit whether your headline actually contains the terms recruiters search.</div>
+  </div>
+</section>
+
+<!-- SUMMARY -->
+<section class="panel" id="summary">
+  <span class="section-kicker">Part 5</span>
+  <h2 class="section-title">What I Learned Today</h2>
+  <div class="summary-card">
+    <span class="kicker">Shareable Summary Card</span>
+    <h3>I let AI roast my LinkedIn profile today. Here's what changed:</h3>
+    <div class="summary-scores">
+      <div class="box before-box"><div class="n">31</div><div class="l">Before</div></div>
+      <div class="sep">→</div>
+      <div class="box after-box"><div class="n">82</div><div class="l">After</div></div>
+    </div>
+    <b style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#6B6355;">Top 3 mistakes I was making</b>
+    <ol>
+      <li>My headline said "Aspiring" and "Exploring" — words that undersell instead of sell.</li>
+      <li>My About section was one sentence with zero proof, hook, or call to action.</li>
+      <li>My experience bullets described tasks ("Worked on...") instead of outcomes.</li>
+    </ol>
+    <div class="highlight-line">The #1 thing that made the biggest difference: turning my internship duties into numbers and outcomes — the work didn't change, but finally being able to see it did.</div>
+  </div>
+  <p style="text-align:center;color:var(--muted);font-size:13px;margin-top:16px;">Screenshot the card above and post it — that's the point.</p>
+</section>
+
+</main>
+
+<p class="foot-note">Rebuilt using only the information you provided. No achievements, roles, or metrics were invented.</p>
+
+<script>
+  const buttons = document.querySelectorAll('.tabs button');
+  const panels = document.querySelectorAll('.panel');
+  buttons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      buttons.forEach(b => b.classList.remove('active'));
+      panels.forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById(btn.dataset.panel).classList.add('active');
+      window.scrollTo({top: 0, behavior: 'smooth'});
+    });
+  });
+</script>
+
+</body>
+</html>
