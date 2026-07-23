@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Streaming Showdown — Netflix vs Hulu vs Disney+ vs Max</title>
+<style>
+  :root{
+    --bg:#0f1115;
+    --panel:#161923;
+    --panel2:#1d2130;
+    --border:#2a2f42;
+    --text:#e8eaf2;
+    --muted:#8b93ab;
+    --accent:#6c8cff;
+    --accent2:#ff6ca0;
+    --good:#3ddc97;
+    --warn:#ffb547;
+    --netflix:#e50914;
+    --hulu:#1ce783;
+    --disney:#1a3b8b;
+    --max:#8b5cf6;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:radial-gradient(circle at top left, #1a1f2e, #0b0d12 60%);
+    color:var(--text);
+    min-height:100vh;
+    padding:24px 16px 60px;
+  }
+  .wrap{max-width:1080px;margin:0 auto;}
+  header{margin-bottom:28px;}
+  header h1{
+    font-size:clamp(1.5rem,4vw,2.2rem);
+    margin:0 0 6px;
+    background:linear-gradient(90deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+    font-weight:800;
+  }
+  header p{color:var(--muted);margin:0;font-size:.95rem;line-height:1.5;max-width:640px;}
+
+  .badge-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;}
+  .badge{
+    font-size:.72rem;
+    padding:4px 10px;
+    border-radius:20px;
+    background:var(--panel2);
+    border:1px solid var(--border);
+    color:var(--muted);
+  }
+
+  .panel{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:20px;
+    margin-bottom:20px;
+  }
+  .panel h2{margin:0 0 4px;font-size:1.05rem;}
+  .panel .sub{color:var(--muted);font-size:.82rem;margin:0 0 16px;}
+
+  .weights{display:grid;gap:16px;}
+  .weight-row{display:grid;grid-template-columns:140px 1fr 42px;gap:12px;align-items:center;}
+  .weight-row label{font-size:.85rem;color:var(--text);}
+  .weight-row input[type=range]{
+    -webkit-appearance:none;width:100%;height:6px;border-radius:3px;
+    background:var(--border);outline:none;
+  }
+  .weight-row input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;width:18px;height:18px;border-radius:50%;
+    background:var(--accent);cursor:pointer;border:2px solid #fff2;
+  }
+  .weight-row input[type=range]::-moz-range-thumb{
+    width:18px;height:18px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid #fff2;
+  }
+  .weight-val{text-align:right;font-variant-numeric:tabular-nums;color:var(--accent);font-weight:600;font-size:.85rem;}
+
+  .preset-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;}
+  .preset-btn{
+    background:var(--panel2);border:1px solid var(--border);color:var(--text);
+    padding:7px 12px;border-radius:8px;font-size:.78rem;cursor:pointer;transition:.15s;
+  }
+  .preset-btn:hover{border-color:var(--accent);color:var(--accent);}
+
+  .rank-list{display:grid;gap:12px;}
+  .rank-card{
+    background:var(--panel2);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:16px 18px;
+    display:grid;
+    grid-template-columns:34px 1fr auto;
+    gap:14px;
+    align-items:center;
+    position:relative;
+    overflow:hidden;
+    transition:transform .2s ease;
+  }
+  .rank-card::before{
+    content:"";position:absolute;left:0;top:0;bottom:0;width:5px;
+  }
+  .rank-card[data-svc="netflix"]::before{background:var(--netflix);}
+  .rank-card[data-svc="hulu"]::before{background:var(--hulu);}
+  .rank-card[data-svc="disney"]::before{background:var(--disney);}
+  .rank-card[data-svc="max"]::before{background:var(--max);}
+
+  .rank-num{
+    font-size:1.3rem;font-weight:800;color:var(--muted);text-align:center;
+  }
+  .rank-card:first-child .rank-num{color:var(--good);}
+  .rank-name{font-weight:700;font-size:1.05rem;display:flex;align-items:center;gap:8px;}
+  .rank-tag{font-size:.68rem;padding:2px 8px;border-radius:10px;background:var(--good);color:#06281c;font-weight:700;}
+  .rank-bar-track{
+    height:6px;background:var(--border);border-radius:3px;margin-top:8px;overflow:hidden;
+  }
+  .rank-bar-fill{height:100%;border-radius:3px;transition:width .35s ease;}
+  .rank-card[data-svc="netflix"] .rank-bar-fill{background:var(--netflix);}
+  .rank-card[data-svc="hulu"] .rank-bar-fill{background:var(--hulu);}
+  .rank-card[data-svc="disney"] .rank-bar-fill{background:var(--disney);}
+  .rank-card[data-svc="max"] .rank-bar-fill{background:var(--max);}
+  .rank-score{font-size:1.1rem;font-weight:700;font-variant-numeric:tabular-nums;text-align:right;}
+  .rank-score small{display:block;color:var(--muted);font-weight:400;font-size:.68rem;}
+
+  table.datatable{width:100%;border-collapse:collapse;margin-top:8px;font-size:.85rem;}
+  table.datatable th, table.datatable td{
+    padding:10px 8px;text-align:left;border-bottom:1px solid var(--border);
+  }
+  table.datatable th{color:var(--muted);font-weight:600;font-size:.75rem;text-transform:uppercase;letter-spacing:.03em;}
+  table.datatable td.num{font-variant-numeric:tabular-nums;}
+  .svc-cell{display:flex;align-items:center;gap:8px;font-weight:700;}
+  .dot{width:10px;height:10px;border-radius:50%;flex:none;}
+  .dot.netflix{background:var(--netflix);}
+  .dot.hulu{background:var(--hulu);}
+  .dot.disney{background:var(--disney);}
+  .dot.max{background:var(--max);}
+
+  .flag{
+    display:inline-block;font-size:.65rem;padding:1px 6px;border-radius:6px;
+    background:#3a2a12;color:var(--warn);border:1px solid #5a4420;margin-left:6px;
+  }
+
+  details.collapsible{
+    border:1px solid var(--border);border-radius:var(--radius);background:var(--panel);
+    margin-bottom:20px;overflow:hidden;
+  }
+  details.collapsible summary{
+    cursor:pointer;padding:16px 20px;font-weight:700;font-size:.95rem;
+    list-style:none;display:flex;justify-content:space-between;align-items:center;
+  }
+  details.collapsible summary::-webkit-details-marker{display:none;}
+  details.collapsible summary::after{content:"+";font-size:1.3rem;color:var(--muted);}
+  details.collapsible[open] summary::after{content:"–";}
+  .collapsible-body{padding:0 20px 20px;color:var(--muted);font-size:.85rem;line-height:1.65;}
+  .collapsible-body h4{color:var(--text);margin:16px 0 6px;font-size:.85rem;}
+  .collapsible-body ul{margin:6px 0;padding-left:20px;}
+  .collapsible-body li{margin-bottom:6px;}
+
+  .source-list{list-style:none;margin:0;padding:0;display:grid;gap:10px;}
+  .source-list li{
+    padding:10px 12px;background:var(--panel2);border:1px solid var(--border);border-radius:10px;font-size:.8rem;
+  }
+  .source-list a{color:var(--accent);text-decoration:none;word-break:break-word;}
+  .source-list a:hover{text-decoration:underline;}
+  .source-meta{color:var(--muted);font-size:.72rem;margin-top:2px;}
+
+  .empty-state{
+    text-align:center;padding:40px 20px;color:var(--muted);
+  }
+
+  footer{text-align:center;color:var(--muted);font-size:.75rem;margin-top:32px;line-height:1.6;}
+
+  @media (max-width:600px){
+    .weight-row{grid-template-columns:1fr;gap:4px;}
+    .weight-val{text-align:left;}
+    .rank-card{grid-template-columns:26px 1fr;grid-template-rows:auto auto;}
+    .rank-score{grid-column:1/-1;text-align:left;margin-top:4px;}
+    table.datatable{font-size:.75rem;}
+    table.datatable th, table.datatable td{padding:8px 4px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>Streaming Showdown</h1>
+    <p>Netflix vs. Hulu vs. Disney+ vs. Max — built for families deciding which service(s) actually fit their household. Adjust the sliders below to match what matters to you; the ranking updates live.</p>
+    <div class="badge-row">
+      <span class="badge">Data current as of July 2026</span>
+      <span class="badge">Sourced from CNBC, Reelgood, Variety, Common Sense Media &amp; more</span>
+      <span class="badge">Some values are researcher estimates — flagged below</span>
+    </div>
+  </header>
+
+  <div class="panel" id="weightsPanel">
+    <h2>Your priorities</h2>
+    <p class="sub">Drag each slider to set how much that factor matters to your family (0 = ignore it, 10 = critical).</p>
+    <div class="weights" id="weightsContainer"></div>
+    <div class="preset-row">
+      <button class="preset-btn" data-preset="budget">💰 Budget-first family</button>
+      <button class="preset-btn" data-preset="quality">📺 Home theater / 4K family</button>
+      <button class="preset-btn" data-preset="kids">🧒 Young kids first</button>
+      <button class="preset-btn" data-preset="bigHousehold">👨‍👩‍👧‍👦 Big multi-screen household</button>
+      <button class="preset-btn" data-preset="reset">↺ Reset to equal</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Live ranking</h2>
+    <p class="sub" id="rankSub">Loading comparison…</p>
+    <div class="rank-list" id="rankList"></div>
+  </div>
+
+  <div class="panel">
+    <h2>Full data table</h2>
+    <p class="sub">Every raw data point behind the scores above — check the "How this was researched" panel for details on estimates.</p>
+    <div style="overflow-x:auto;">
+      <table class="datatable" id="dataTable"></table>
+    </div>
+  </div>
+
+  <details class="collapsible">
+    <summary>📖 How this was researched</summary>
+    <div class="collapsible-body">
+      <p>This tool compares standalone US subscriptions to Netflix, Hulu, Disney+, and Max (formerly HBO Max) as of July 2026. Here's how each criterion was built and where sources disagreed.</p>
+
+      <h4>Price</h4>
+      <p>Pricing reflects each service's standard ad-free tier (the most common apples-to-apples comparison point), cross-checked against each service's ad-supported entry tier. Netflix raised prices on March 26, 2026 (confirmed by CNBC, Variety, and PrimeTimer); Disney+, Hulu, and Max prices were confirmed against multiple independent 2026 pricing guides that agreed within a few dollars of each other. Where guides disagreed by more than $1–2 (which happened for Hulu's ad-supported tier — reports ranged from $9.99 to $11.99), we used the most recently dated source.</p>
+
+      <h4>Simultaneous streams</h4>
+      <p>Reflects the stream limit on each service's standard ad-free tier (not the top premium tier), since that's the plan most subscribers land on. Disney+ is a genuine outlier here — it offers 4 streams on every tier, while Netflix, Hulu, and Max cap their standard tier at 2 and reserve 4 streams for their pricier top tier.</p>
+
+      <h4>Video quality (4K/HDR access)</h4>
+      <p>Scored on whether 4K/HDR is available at all, and at what tier. Disney+ includes 4K on every paid tier. Netflix and Max gate 4K behind their most expensive tier (an additional $7–4.50/month over their standard plan). Hulu does not offer a 4K tier at all as a standalone product.</p>
+
+      <h4>Content library size</h4>
+      <p><strong>This is the criterion with the most estimation involved.</strong> No streamer publishes an official up-to-the-day title count. We used Reelgood's published "movies per dollar" and "TV shows per dollar" metrics (from their March 2026 Streaming Value Scorecard, built on their licensed streaming-availability database) and multiplied by each service's ad-free price to back into an estimated total catalog size. <span class="flag">ESTIMATE</span> This calculation is ours — Reelgood publishes the per-dollar ratio, not the derived totals shown here, so treat the raw title counts as directional rather than exact.</p>
+
+      <h4>Kids &amp; family content</h4>
+      <p><span class="flag">EDITORIAL SCORE</span> There's no single published "kids library size" metric that covers all four services consistently, so this score (1–10) is our own synthesis of qualitative reporting: Common Sense Media's family streaming guidance, comparative reviews on parental-control strength, and analysis of how much of each catalog is purpose-built for young children vs. general-audience content that happens to be family-safe. Disney+ and Netflix were repeatedly cited as having the strongest parental controls; Disney+ was consistently cited as having the deepest dedicated young-children's catalog; Max was repeatedly flagged as having the weakest kids-specific offering and least developed parental controls.</p>
+
+      <h4>Conflicts we had to resolve</h4>
+      <ul>
+        <li>Netflix's ad-supported tier stream count was reported as both 1 and 2 across sources; we went with 2, matching the majority of 2026 breakdowns.</li>
+        <li>Hulu's ad-supported price ranged from $9.99–$11.99 depending on publish date; we used the most recently dated figure ($11.99).</li>
+        <li>Max's standard tier price appears as both $18.49 and $16.99 in older vs. newer articles; we used $18.49, confirmed by two independently dated 2026 sources.</li>
+      </ul>
+    </div>
+  </details>
+
+  <details class="collapsible">
+    <summary>🔗 Sources</summary>
+    <div class="collapsible-body">
+      <ul class="source-list">
+        <li><strong>Netflix pricing (March 2026 hike)</strong> — CNBC, "Netflix raises prices across all streaming plans"<br><a href="https://www.cnbc.com/2026/03/26/netflix-raises-prices-across-all-streaming-plans.html" target="_blank" rel="noopener">cnbc.com/2026/03/26/netflix-raises-prices…</a><div class="source-meta">March 26, 2026</div></li>
+        <li><strong>Netflix pricing confirmation</strong> — Variety, "Netflix Raising U.S. Prices for Second Time in Less Than Two Years"<br><a href="https://variety.com/2026/tv/news/netflix-raising-prices-second-time-in-a-year-1236700999/" target="_blank" rel="noopener">variety.com/2026/tv/news/netflix-raising-prices…</a><div class="source-meta">March 26, 2026</div></li>
+        <li><strong>Netflix plan details (streams/resolution)</strong> — PrimeTimer, "Netflix raises prices across all plans, see the detailed new plan list for 2026"<br><a href="https://www.primetimer.com/features/netflix-raises-prices-across-all-plans-see-the-detailed-new-plan-list-for-2026" target="_blank" rel="noopener">primetimer.com/features/netflix-raises-prices…</a><div class="source-meta">March 27, 2026</div></li>
+        <li><strong>Disney+ pricing &amp; specs</strong> — checkthat.ai, "Disney+ Pricing 2026: Plans, Costs & Bundle Deals"<br><a href="https://checkthat.ai/brands/disney-2/pricing" target="_blank" rel="noopener">checkthat.ai/brands/disney-2/pricing</a><div class="source-meta">May 8, 2026</div></li>
+        <li><strong>Disney+/Hulu/Max overview</strong> — The Sun Papers, "Best Streaming Services 2026: Prices, Plans, What's Included"<br><a href="https://thesunpapers.com/c/lifestyle/best-streaming-services-2026/" target="_blank" rel="noopener">thesunpapers.com/…/best-streaming-services-2026</a><div class="source-meta">April 17, 2026</div></li>
+        <li><strong>Hulu pricing &amp; stream limits</strong> — Yardbarker, "Hulu Plans, Pricing, and Bundles in 2026"<br><a href="https://www.yardbarker.com/entertainment/streaming/articles/hulu_review_plans_pricing_channels_bundles_and_more/s1_17261_42225127" target="_blank" rel="noopener">yardbarker.com/…/hulu_review_plans_pricing…</a><div class="source-meta">March 17, 2026</div></li>
+        <li><strong>Hulu stream limit confirmation</strong> — SearchEngineInsight, "Hulu Pricing 2026 – Every Plan, Bundle, Hidden Cost & Discount"<br><a href="https://www.searchengineinsight.com/hulu-pricing/" target="_blank" rel="noopener">searchengineinsight.com/hulu-pricing</a><div class="source-meta">May 2, 2026</div></li>
+        <li><strong>Max (HBO Max) pricing &amp; tier specs</strong> — Subscription Price Guide, "HBO Max Price History (2021–2026)"<br><a href="https://subscriptionpriceguide.com/services/max/" target="_blank" rel="noopener">subscriptionpriceguide.com/services/max</a><div class="source-meta">Updated ~July 2026</div></li>
+        <li><strong>Max tier/stream confirmation</strong> — smarttvs.org, "HBO Max Plans 2026: Prices, Tiers, and 4K Compared"<br><a href="https://smarttvs.org/hbo-max-plans-2026/" target="_blank" rel="noopener">smarttvs.org/hbo-max-plans-2026</a><div class="source-meta">June 22, 2026</div></li>
+        <li><strong>Content library size (movies/shows per dollar)</strong> — Reelgood for Business, "How Many Movies and TV Shows Do You Get Per Dollar? The 2026 Streaming Value Scorecard"<br><a href="https://data.reelgood.com/how-many-movies-tv-shows-per-dollar-2026-streaming-value-scorecard/" target="_blank" rel="noopener">data.reelgood.com/how-many-movies-tv-shows-per-dollar…</a><div class="source-meta">April 2, 2026 — based on Reelgood's licensed streaming-availability database, March 2026 snapshot</div></li>
+        <li><strong>Kids/family content quality analysis</strong> — YouCompare, "Best Streaming Services for Families in 2026 Compared"<br><a href="https://www.youcompare.com/best-streaming-families/" target="_blank" rel="noopener">youcompare.com/best-streaming-families</a><div class="source-meta">April 17, 2026</div></li>
+        <li><strong>Family streaming guidance</strong> — Common Sense Media, "How do I choose the best streaming service for my family?"<br><a href="https://www.commonsensemedia.org/articles/how-do-i-choose-the-best-streaming-service-for-my-family" target="_blank" rel="noopener">commonsensemedia.org/articles/how-do-i-choose…</a><div class="source-meta">Reviewed July 2025</div></li>
+        <li><strong>Kids-content parental control comparison</strong> — NC Family Policy Council, "Which Streaming Service is Right for Your Family?"<br><a href="https://ncfamily.org/which-streaming-service-is-right-for-your-family/" target="_blank" rel="noopener">ncfamily.org/which-streaming-service-is-right…</a><div class="source-meta">January 2, 2025</div></li>
+      </ul>
+    </div>
+  </details>
+
+  <footer>
+    Built for informational purposes. Prices, plans, and libraries change often — always confirm current details on each provider's official site before subscribing.<br>
+    Ranking is a weighted score you control; it is not a universal "best" and reflects only the criteria and weights selected above.
+  </footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---- DATA ----
+  // sourced = true/false (or 'partial'/'estimate') flags whether the underlying number is a direct
+  // sourced figure vs. derived/estimated. See "How this was researched" panel for details.
+  const services = [
+    {
+      id: "netflix",
+      name: "Netflix",
+      tagline: "Standard (ad-free) $19.99/mo · Standard w/ Ads $8.99/mo",
+      criteria: {
+        price: { value: 19.99, unit: "$/mo", sourced: true, note: "Standard ad-free tier, post March 2026 hike" },
+        streams: { value: 2, unit: "streams", sourced: true, note: "Standard tier limit" },
+        library: { value: 8735, unit: "titles (est.)", sourced: "estimate", note: "≈5,017 movies + ≈3,718 TV shows, derived from Reelgood's 251 movies/$ and 186 shows/$ at $19.99" },
+        quality: { value: 6, unit: "/10", sourced: "estimate", note: "1080p on Standard; 4K+HDR only on Premium ($26.99)" },
+        kids: { value: 7, unit: "/10", sourced: "estimate", note: "Broad kids catalog, tied for best parental controls, but more mature overall library" }
+      }
+    },
+    {
+      id: "hulu",
+      name: "Hulu",
+      tagline: "No Ads $18.99/mo · With Ads $11.99/mo",
+      criteria: {
+        price: { value: 18.99, unit: "$/mo", sourced: true, note: "Hulu (No Ads) tier" },
+        streams: { value: 2, unit: "streams", sourced: true, note: "Standard limit on all Hulu on-demand plans" },
+        library: { value: 4079, unit: "titles (est.)", sourced: "estimate", note: "≈1,481 movies + ≈2,598 TV shows, derived from Reelgood's 78 movies/$ and 137 shows/$ at $18.99" },
+        quality: { value: 3, unit: "/10", sourced: "estimate", note: "1080p HD only — no 4K tier available on standalone Hulu" },
+        kids: { value: 5, unit: "/10", sourced: "estimate", note: "Has kids profile, but weaker parental controls and some teen content flagged as inconsistent for family use" }
+      }
+    },
+    {
+      id: "disney",
+      name: "Disney+",
+      tagline: "Premium (ad-free) $18.99/mo · Basic w/ Ads $11.99/mo",
+      criteria: {
+        price: { value: 18.99, unit: "$/mo", sourced: true, note: "Premium ad-free tier" },
+        streams: { value: 4, unit: "streams", sourced: true, note: "4 simultaneous streams on every paid tier, including Basic" },
+        library: { value: 3399, unit: "titles (est.)", sourced: "estimate", note: "≈2,089 movies + ≈1,310 TV shows, derived from Reelgood's 110 movies/$ and 69 shows/$ at $18.99" },
+        quality: { value: 10, unit: "/10", sourced: true, note: "4K UHD + HDR included on every paid tier, no upcharge" },
+        kids: { value: 10, unit: "/10", sourced: "estimate", note: "Deepest dedicated young-children's catalog; tied for best parental controls" }
+      }
+    },
+    {
+      id: "max",
+      name: "Max",
+      tagline: "Standard $18.49/mo · Basic w/ Ads $10.99/mo · Premium $22.99/mo",
+      criteria: {
+        price: { value: 18.49, unit: "$/mo", sourced: true, note: "Standard ad-free tier" },
+        streams: { value: 2, unit: "streams", sourced: true, note: "Standard tier limit (Premium gets 4)" },
+        library: { value: 4567, unit: "titles (est.)", sourced: "estimate", note: "≈2,533 movies + ≈2,034 TV shows, derived from Reelgood's 137 movies/$ and 110 shows/$ at $18.49" },
+        quality: { value: 6, unit: "/10", sourced: "estimate", note: "1080p on Basic/Standard; 4K+Dolby Atmos only on Premium ($22.99)" },
+        kids: { value: 3, unit: "/10", sourced: "estimate", note: "Weakest dedicated kids catalog and least developed parental controls among the four" }
+      }
+    }
+  ];
+
+  const criteriaMeta = [
+    { key: "price",   label: "Monthly price",        direction: "lower-better", icon: "💵" },
+    { key: "streams", label: "Simultaneous streams",  direction: "higher-better", icon: "📱" },
+    { key: "library", label: "Library size",          direction: "higher-better", icon: "🎬" },
+    { key: "quality", label: "Video quality (4K/HDR)",direction: "higher-better", icon: "✨" },
+    { key: "kids",    label: "Kids & family content", direction: "higher-better", icon: "🧒" }
+  ];
+
+  const presets = {
+    budget:       { price: 10, streams: 3, library: 5, quality: 2, kids: 4 },
+    quality:      { price: 3,  streams: 6, library: 5, quality: 10, kids: 3 },
+    kids:         { price: 5,  streams: 4, library: 3, quality: 3, kids: 10 },
+    bigHousehold: { price: 4,  streams: 10, library: 4, quality: 4, kids: 5 },
+    reset:        { price: 5,  streams: 5, library: 5, quality: 5, kids: 5 }
+  };
+
+  let weights = Object.assign({}, presets.reset);
+
+  // ---- BUILD WEIGHT SLIDERS ----
+  const weightsContainer = document.getElementById("weightsContainer");
+  criteriaMeta.forEach(c => {
+    const row = document.createElement("div");
+    row.className = "weight-row";
+    row.innerHTML = `
+      <label for="w-${c.key}">${c.icon} ${c.label}</label>
+      <input type="range" id="w-${c.key}" min="0" max="10" step="1" value="${weights[c.key]}">
+      <span class="weight-val" id="wv-${c.key}">${weights[c.key]}</span>
+    `;
+    weightsContainer.appendChild(row);
+  });
+
+  criteriaMeta.forEach(c => {
+    const slider = document.getElementById(`w-${c.key}`);
+    slider.addEventListener("input", () => {
+      weights[c.key] = Number(slider.value);
+      document.getElementById(`wv-${c.key}`).textContent = slider.value;
+      render();
+    });
+  });
+
+  document.querySelectorAll(".preset-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const p = presets[btn.dataset.preset];
+      if (!p) return;
+      weights = Object.assign({}, p);
+      criteriaMeta.forEach(c => {
+        document.getElementById(`w-${c.key}`).value = weights[c.key];
+        document.getElementById(`wv-${c.key}`).textContent = weights[c.key];
+      });
+      render();
+    });
+  });
+
+  // ---- SCORING ----
+  function normalize(key, direction) {
+    const vals = services.map(s => s.criteria[key].value);
+    const min = Math.min(...vals);
+    const max = Math.max(...vals);
+    const range = max - min || 1;
+    const out = {};
+    services.forEach(s => {
+      const v = s.criteria[key].value;
+      let n = (v - min) / range; // 0..1, higher raw = higher n
+      if (direction === "lower-better") n = 1 - n;
+      out[s.id] = n;
+    });
+    return out;
+  }
+
+  function computeScores() {
+    const totalWeight = criteriaMeta.reduce((sum, c) => sum + weights[c.key], 0) || 1;
+    const normalized = {};
+    criteriaMeta.forEach(c => {
+      normalized[c.key] = normalize(c.key, c.direction);
+    });
+    return services.map(s => {
+      let score = 0;
+      criteriaMeta.forEach(c => {
+        score += normalized[c.key][s.id] * weights[c.key];
+      });
+      const pct = Math.round((score / totalWeight) * 100);
+      return { service: s, pct };
+    }).sort((a, b) => b.pct - a.pct);
+  }
+
+  // ---- RENDER RANKING ----
+  const rankList = document.getElementById("rankList");
+  const rankSub = document.getElementById("rankSub");
+
+  function render() {
+    try {
+      const allZero = criteriaMeta.every(c => weights[c.key] === 0);
+      rankList.innerHTML = "";
+
+      if (allZero) {
+        rankSub.textContent = "All priorities are set to 0 — move at least one slider to see a ranking.";
+        const empty = document.createElement("div");
+        empty.className = "empty-state";
+        empty.textContent = "No priorities selected yet.";
+        rankList.appendChild(empty);
+        return;
+      }
+
+      const ranked = computeScores();
+      rankSub.textContent = "Ranked by your current priority weights — drag sliders above to change this instantly.";
+
+      ranked.forEach((r, i) => {
+        const card = document.createElement("div");
+        card.className = "rank-card";
+        card.setAttribute("data-svc", r.service.id);
+        card.innerHTML = `
+          <div class="rank-num">${i + 1}</div>
+          <div>
+            <div class="rank-name">${r.service.name} ${i === 0 ? '<span class="rank-tag">Best match</span>' : ''}</div>
+            <div style="color:var(--muted);font-size:.8rem;margin-top:2px;">${r.service.tagline}</div>
+            <div class="rank-bar-track"><div class="rank-bar-fill" style="width:${Math.max(r.pct,2)}%;"></div></div>
+          </div>
+          <div class="rank-score">${r.pct}<small>match score</small></div>
+        `;
+        rankList.appendChild(card);
+      });
+    } catch (err) {
+      rankList.innerHTML = `<div class="empty-state">Something went wrong computing the ranking. Try refreshing the page.</div>`;
+      console.error(err);
+    }
+  }
+
+  // ---- RENDER DATA TABLE ----
+  function renderTable() {
+    const table = document.getElementById("dataTable");
+    let thead = "<thead><tr><th>Service</th>";
+    criteriaMeta.forEach(c => thead += `<th>${c.icon} ${c.label}</th>`);
+    thead += "</tr></thead>";
+
+    let tbody = "<tbody>";
+    services.forEach(s => {
+      tbody += `<tr><td><div class="svc-cell"><span class="dot ${s.id}"></span>${s.name}</div></td>`;
+      criteriaMeta.forEach(c => {
+        const d = s.criteria[c.key];
+        const flag = d.sourced === "estimate" ? '<span class="flag">estimate</span>' : (d.sourced === "partial" ? '<span class="flag">partial</span>' : '');
+        tbody += `<td class="num">${d.value.toLocaleString()} ${d.unit}${flag}<div style="color:var(--muted);font-size:.7rem;margin-top:2px;">${d.note}</div></td>`;
+      });
+      tbody += "</tr>";
+    });
+    tbody += "</tbody>";
+
+    table.innerHTML = thead + tbody;
+  }
+
+  // ---- INIT ----
+  try {
+    renderTable();
+    render();
+  } catch (err) {
+    document.getElementById("rankList").innerHTML = `<div class="empty-state">Failed to load comparison data.</div>`;
+    console.error(err);
+  }
+})();
+</script>
+</body>
+</html>
