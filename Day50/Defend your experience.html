@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Defend Your Experience // cross-exam.sh</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap');
+
+  :root{
+    --bg: #060907;
+    --bg-panel: #0d1310;
+    --bg-panel-2: #101815;
+    --line: #1c2b23;
+    --line-bright: #2a4436;
+    --green: #3dffa0;
+    --green-dim: #1f8a5c;
+    --amber: #ffb454;
+    --red: #ff5f5f;
+    --text: #d6e5dd;
+    --text-dim: #6f8a7d;
+    --text-dimmer: #445850;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+    --glow: 0 0 8px rgba(61,255,160,.55);
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{height:100%;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:var(--mono);
+    font-size:14px;
+    line-height:1.6;
+    overflow-x:hidden;
+    background-image:
+      linear-gradient(rgba(255,255,255,.015) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.015) 1px, transparent 1px);
+    background-size: 32px 32px;
+  }
+  ::selection{ background:var(--green); color:#000; }
+  ::-webkit-scrollbar{ width:8px; }
+  ::-webkit-scrollbar-track{ background:var(--bg-panel); }
+  ::-webkit-scrollbar-thumb{ background:var(--line-bright); border-radius:0; }
+
+  /* scanline overlay */
+  .scanlines{
+    pointer-events:none; position:fixed; inset:0; z-index:9999;
+    background:repeating-linear-gradient(0deg, rgba(0,0,0,0.09) 0px, rgba(0,0,0,0.09) 1px, transparent 1px, transparent 3px);
+    opacity:.35; mix-blend-mode:overlay;
+  }
+  .crt-vignette{
+    pointer-events:none; position:fixed; inset:0; z-index:9998;
+    box-shadow: inset 0 0 180px rgba(0,0,0,.75);
+  }
+
+  a{ color:var(--green); }
+  button{ font-family:var(--mono); cursor:pointer; }
+
+  .cursor{
+    display:inline-block; width:.55em; height:1.05em; background:var(--green);
+    box-shadow:var(--glow); vertical-align:text-bottom; margin-left:2px;
+    animation:blink 1s steps(1) infinite;
+  }
+  @keyframes blink{ 50%{opacity:0;} }
+
+  .topbar{
+    position:sticky; top:0; z-index:50;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:10px 20px; background:rgba(6,9,7,.9); backdrop-filter:blur(6px);
+    border-bottom:1px solid var(--line);
+  }
+  .topbar .brand{ display:flex; align-items:center; gap:10px; font-size:13px; letter-spacing:.5px; }
+  .brand .dot{ width:9px; height:9px; border-radius:50%; background:var(--green); box-shadow:var(--glow); }
+  .topbar nav{ display:flex; gap:4px; }
+  .topbar nav button{
+    background:transparent; border:1px solid transparent; color:var(--text-dim);
+    padding:6px 12px; font-size:12px; letter-spacing:.4px; text-transform:uppercase;
+  }
+  .topbar nav button.active{ color:var(--green); border-color:var(--line-bright); background:var(--bg-panel-2); }
+  .topbar nav button:hover{ color:var(--text); }
+
+  .app{ max-width:1180px; margin:0 auto; padding:28px 20px 80px; }
+  .hidden{ display:none !important; }
+
+  /* ---------- Landing ---------- */
+  .boot{
+    border:1px solid var(--line); background:var(--bg-panel); padding:26px 26px 22px;
+    margin-bottom:26px; position:relative;
+  }
+  .boot::before{
+    content:''; position:absolute; top:-1px; left:-1px; right:-1px; height:26px;
+    background:var(--bg-panel-2); border-bottom:1px solid var(--line);
+  }
+  .boot .dots{ display:flex; gap:6px; position:absolute; top:9px; left:12px; z-index:2; }
+  .boot .dots span{ width:8px; height:8px; border-radius:50%; background:var(--line-bright); }
+  .boot-title{ position:relative; z-index:2; padding-top:22px; font-size:11px; color:var(--text-dim); letter-spacing:2px; text-align:center; text-transform:uppercase; }
+  .hero{ text-align:center; padding:34px 10px 8px; }
+  .hero .eyebrow{ color:var(--green); font-size:12px; letter-spacing:3px; text-transform:uppercase; }
+  .hero h1{
+    font-size:clamp(30px,5vw,52px); margin:14px 0 12px; font-weight:800; letter-spacing:-1px;
+    color:var(--text); text-shadow:0 0 22px rgba(61,255,160,.18);
+  }
+  .hero h1 .g{ color:var(--green); text-shadow:var(--glow); }
+  .hero p{ color:var(--text-dim); max-width:640px; margin:0 auto; font-size:14.5px; }
+  .hero .typed-line{ margin-top:20px; font-size:15px; color:var(--text); min-height:1.6em; }
+  .hero .typed-line .prompt{ color:var(--amber); }
+
+  .how-it-works{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin:30px 0; }
+  .hiw-card{ border:1px solid var(--line); background:var(--bg-panel); padding:16px; }
+  .hiw-card .tag{ color:var(--green-dim); font-size:11px; letter-spacing:2px; }
+  .hiw-card h3{ font-size:14px; margin:8px 0 6px; color:var(--text); }
+  .hiw-card p{ color:var(--text-dim); font-size:12.5px; }
+
+  .upload-zone{
+    border:1px dashed var(--line-bright); background:var(--bg-panel);
+    padding:34px 20px; text-align:center; transition:.15s; margin-top:10px;
+  }
+  .upload-zone.drag{ background:rgba(61,255,160,.05); border-color:var(--green); }
+  .upload-zone .icon{ font-size:26px; color:var(--green); }
+  .upload-zone h3{ margin:10px 0 4px; font-size:15px; }
+  .upload-zone p{ color:var(--text-dim); font-size:12.5px; margin-bottom:14px; }
+  .upload-zone input[type=file]{ display:none; }
+
+  textarea{
+    width:100%; min-height:150px; background:#08100b; color:var(--text);
+    border:1px solid var(--line); padding:14px; font-family:var(--mono); font-size:13px;
+    resize:vertical; outline:none;
+  }
+  textarea:focus{ border-color:var(--green-dim); box-shadow:0 0 0 1px var(--green-dim); }
+
+  .btn{
+    background:transparent; border:1px solid var(--green-dim); color:var(--green);
+    padding:11px 20px; font-size:12.5px; letter-spacing:1.5px; text-transform:uppercase;
+    transition:.15s;
+  }
+  .btn:hover:not(:disabled){ background:var(--green); color:#03150c; box-shadow:var(--glow); }
+  .btn:disabled{ opacity:.35; cursor:not-allowed; }
+  .btn.secondary{ border-color:var(--line-bright); color:var(--text-dim); }
+  .btn.secondary:hover:not(:disabled){ background:var(--bg-panel-2); color:var(--text); box-shadow:none; }
+  .btn.danger{ border-color:#5c2a2a; color:var(--red); }
+  .btn.danger:hover{ background:var(--red); color:#1a0505; }
+
+  .row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  .row.between{ justify-content:space-between; }
+  .row.end{ justify-content:flex-end; }
+
+  .hint{ color:var(--text-dimmer); font-size:11.5px; }
+
+  .field-label{ font-size:11px; letter-spacing:1.5px; color:var(--text-dim); text-transform:uppercase; margin-bottom:8px; display:block; }
+
+  select{
+    background:#08100b; color:var(--text); border:1px solid var(--line);
+    padding:9px 12px; font-family:var(--mono); font-size:12.5px; outline:none;
+  }
+
+  /* ---------- Interview screen ---------- */
+  .interview-grid{ display:grid; grid-template-columns:250px 1fr; gap:18px; align-items:start; }
+  @media (max-width:820px){ .interview-grid{ grid-template-columns:1fr; } .sidebar{ order:2; } }
+
+  .sidebar{ border:1px solid var(--line); background:var(--bg-panel); padding:16px; position:sticky; top:70px; }
+  .sidebar h4{ font-size:11px; letter-spacing:2px; color:var(--text-dim); text-transform:uppercase; margin-bottom:12px; }
+  .claim-item{ border-left:2px solid var(--line-bright); padding:8px 10px; margin-bottom:8px; font-size:12px; background:var(--bg-panel-2); cursor:default; }
+  .claim-item .ctext{ color:var(--text); margin-bottom:5px; }
+  .claim-item .cmeter{ height:4px; background:var(--line); position:relative; overflow:hidden; }
+  .claim-item .cmeter i{ display:block; height:100%; background:var(--text-dimmer); transition:width .4s; }
+  .claim-item[data-status="strong"]{ border-color:var(--green); }
+  .claim-item[data-status="strong"] .cmeter i{ background:var(--green); box-shadow:var(--glow); }
+  .claim-item[data-status="weak"]{ border-color:var(--amber); }
+  .claim-item[data-status="weak"] .cmeter i{ background:var(--amber); }
+  .claim-item[data-status="pending"]{ opacity:.55; }
+  .claim-item .clabel{ font-size:10px; letter-spacing:1px; text-transform:uppercase; color:var(--text-dimmer); margin-top:4px; }
+
+  .progress-block{ margin-top:16px; padding-top:14px; border-top:1px solid var(--line); }
+  .progress-block .pct{ font-size:28px; color:var(--green); text-shadow:var(--glow); }
+  .progress-block .lbl{ font-size:10px; color:var(--text-dim); letter-spacing:1px; text-transform:uppercase; }
+
+  .terminal{ border:1px solid var(--line); background:var(--bg-panel); min-height:520px; display:flex; flex-direction:column; }
+  .terminal-head{
+    display:flex; align-items:center; justify-content:space-between; padding:9px 14px;
+    background:var(--bg-panel-2); border-bottom:1px solid var(--line); font-size:11px; color:var(--text-dim);
+  }
+  .terminal-head .dots{ display:flex; gap:6px; }
+  .terminal-head .dots span{ width:8px; height:8px; border-radius:50%; background:var(--line-bright); }
+  .term-log{ flex:1; padding:18px; overflow-y:auto; max-height:60vh; }
+  .msg{ margin-bottom:18px; animation:fadeIn .25s ease; }
+  @keyframes fadeIn{ from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);} }
+  .msg .who{ font-size:10px; letter-spacing:2px; text-transform:uppercase; margin-bottom:5px; }
+  .msg.interviewer .who{ color:var(--green); }
+  .msg.user .who{ color:var(--amber); }
+  .msg .body{ color:var(--text); font-size:13.5px; white-space:pre-wrap; }
+  .msg .meta-tag{ display:inline-block; font-size:9.5px; letter-spacing:1px; text-transform:uppercase; color:var(--bg); background:var(--text-dimmer); padding:1px 6px; margin-bottom:6px; }
+  .msg .meta-tag.weak{ background:var(--amber); }
+  .msg .meta-tag.strong{ background:var(--green); }
+
+  .term-input{ border-top:1px solid var(--line); padding:14px; }
+  .mcq-options{ display:flex; flex-direction:column; gap:8px; margin-bottom:10px; }
+  .mcq-btn{
+    text-align:left; background:#08100b; border:1px solid var(--line); color:var(--text);
+    padding:10px 12px; font-size:13px; transition:.12s;
+  }
+  .mcq-btn:hover{ border-color:var(--green-dim); color:var(--green); background:rgba(61,255,160,.04); }
+  .mcq-btn .k{ color:var(--text-dimmer); margin-right:8px; }
+
+  .free-input{ display:flex; gap:8px; }
+  .free-input input{
+    flex:1; background:#08100b; border:1px solid var(--line); color:var(--text);
+    padding:11px 13px; font-family:var(--mono); font-size:13px; outline:none;
+  }
+  .free-input input:focus{ border-color:var(--green-dim); }
+
+  .typing-indicator{ display:flex; gap:4px; padding:4px 0; }
+  .typing-indicator span{ width:6px; height:6px; background:var(--green); border-radius:50%; animation:tb 1s infinite; }
+  .typing-indicator span:nth-child(2){ animation-delay:.15s; } .typing-indicator span:nth-child(3){ animation-delay:.3s; }
+  @keyframes tb{ 0%,60%,100%{opacity:.2;} 30%{opacity:1;} }
+
+  .banner{ padding:10px 14px; border:1px solid var(--amber); color:var(--amber); font-size:12px; margin-bottom:14px; background:rgba(255,180,84,.06); }
+  .banner.err{ border-color:var(--red); color:var(--red); background:rgba(255,95,95,.06); }
+
+  /* ---------- Report ---------- */
+  .report-head{ text-align:center; margin-bottom:26px; }
+  .report-head .score{ font-size:64px; color:var(--green); text-shadow:var(--glow); font-weight:800; }
+  .report-head .score small{ font-size:20px; color:var(--text-dim); }
+  .bars{ display:flex; flex-direction:column; gap:14px; margin:24px 0; }
+  .bar-row .label-row{ display:flex; justify-content:space-between; font-size:12.5px; margin-bottom:5px; }
+  .bar-track{ height:10px; background:var(--line); position:relative; }
+  .bar-fill{ height:100%; transition:width .6s ease; }
+  .bar-fill.strong{ background:var(--green); box-shadow:var(--glow); }
+  .bar-fill.weak{ background:var(--amber); }
+  .bar-fill.pending{ background:var(--text-dimmer); }
+
+  .report-cols{ display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:20px; }
+  @media (max-width:760px){ .report-cols{ grid-template-columns:1fr; } }
+  .report-panel{ border:1px solid var(--line); background:var(--bg-panel); padding:16px; }
+  .report-panel h4{ font-size:11px; letter-spacing:2px; text-transform:uppercase; margin-bottom:12px; }
+  .report-panel.good h4{ color:var(--green); }
+  .report-panel.bad h4{ color:var(--amber); }
+  .rp-item{ font-size:12.5px; color:var(--text); border-left:2px solid var(--line-bright); padding:8px 10px; margin-bottom:8px; background:var(--bg-panel-2); }
+  .rp-item .fix{ color:var(--text-dim); margin-top:4px; font-size:11.5px; }
+
+  .history-list{ display:flex; flex-direction:column; gap:10px; }
+  .history-item{
+    border:1px solid var(--line); background:var(--bg-panel); padding:14px 16px;
+    display:flex; justify-content:space-between; align-items:center; font-size:12.5px;
+  }
+  .history-item .hi-left{ display:flex; flex-direction:column; gap:3px; }
+  .history-item .hi-title{ color:var(--text); }
+  .history-item .hi-meta{ color:var(--text-dimmer); font-size:11px; }
+  .history-item .hi-score{ color:var(--green); font-size:20px; margin-right:14px; }
+
+  .empty-state{ text-align:center; padding:50px 20px; color:var(--text-dim); }
+  .empty-state .glyph{ font-size:30px; color:var(--green-dim); margin-bottom:10px; }
+
+  footer{ text-align:center; padding:30px 0 10px; color:var(--text-dimmer); font-size:11px; }
+</style>
+</head>
+<body>
+<div class="scanlines"></div>
+<div class="crt-vignette"></div>
+
+<div class="topbar">
+  <div class="brand"><span class="dot"></span> defend-your-experience <span class="hint">// cross-exam.sh</span></div>
+  <nav id="mainNav">
+    <button data-view="home" class="active">Home</button>
+    <button data-view="interview">Interview</button>
+    <button data-view="report">Report</button>
+    <button data-view="history">History</button>
+  </nav>
+</div>
+
+<div class="app">
+
+  <!-- ================= HOME / UPLOAD VIEW ================= -->
+  <section id="view-home">
+    <div class="boot">
+      <div class="dots"><span></span><span></span><span></span></div>
+      <div class="boot-title">SYSTEM :: CROSS-EXAMINATION ENGINE v1.0</div>
+      <div class="hero">
+        <div class="eyebrow">not a resume checker</div>
+        <h1>Can you <span class="g">defend</span> every line<br>you wrote about yourself?</h1>
+        <p>Upload or paste what you want to defend. An adaptive, skeptical interviewer will interrogate every claim &mdash; projects, numbers, skills, decisions &mdash; until it's airtight.</p>
+        <div class="typed-line" id="typedLine"></div>
+      </div>
+    </div>
+
+    <div class="how-it-works">
+      <div class="hiw-card">
+        <div class="tag">STEP 01</div>
+        <h3>Feed it your claims</h3>
+        <p>Paste your resume, project write-up, or performance review. Every sentence becomes something you must be able to justify.</p>
+      </div>
+      <div class="hiw-card">
+        <div class="tag">STEP 02</div>
+        <h3>Get cross-examined</h3>
+        <p>A skeptical interviewer probes each claim with follow-ups generated only from your own words &mdash; digging deeper the weaker your answer is.</p>
+      </div>
+      <div class="hiw-card">
+        <div class="tag">STEP 03</div>
+        <h3>Walk away with a report</h3>
+        <p>See exactly which stories are interview-ready and which need rebuilding, with concrete fixes for each weak spot.</p>
+      </div>
+    </div>
+
+    <div id="banners"></div>
+
+    <div class="row between" style="margin-bottom:10px;">
+      <label class="field-label" style="margin:0;">01 // What are you defending?</label>
+    </div>
+    <div class="row" style="margin-bottom:14px; gap:10px;">
+      <select id="audienceSelect">
+        <option value="Campus placement / entry-level tech role">Campus placement / entry-level tech role</option>
+        <option value="Data Science / ML internship">Data Science / ML internship</option>
+        <option value="Product-based company SDE role">Product-based company (SDE)</option>
+        <option value="general practice interview">General practice</option>
+      </select>
+      <span class="hint">audience the interviewer will assume</span>
+    </div>
+
+    <div class="upload-zone" id="dropZone">
+      <div class="icon">&#9647;</div>
+      <h3>Drag &amp; drop a file, or paste below</h3>
+      <p>.txt or .md files read directly &middot; PDFs/DOCX: paste the text instead</p>
+      <button class="btn secondary" id="browseBtn">Browse file</button>
+      <input type="file" id="fileInput" accept=".txt,.md">
+    </div>
+
+    <div style="margin-top:16px;">
+      <label class="field-label">02 // Or paste your content here</label>
+      <textarea id="resumeText" placeholder="Paste your resume, project description, or bio here..."></textarea>
+    </div>
+
+    <div class="row end" style="margin-top:16px;">
+      <button class="btn secondary" id="loadSampleBtn">Load my details</button>
+      <button class="btn" id="startBtn">Begin cross-examination &rarr;</button>
+    </div>
+    <footer>All processing happens via the Claude API in your session. Nothing is sent anywhere else. Sessions are saved locally in your browser.</footer>
+  </section>
+
+  <!-- ================= INTERVIEW VIEW ================= -->
+  <section id="view-interview" class="hidden">
+    <div id="interviewBanners"></div>
+    <div class="interview-grid">
+      <aside class="sidebar">
+        <h4>Claims under review</h4>
+        <div id="claimList"></div>
+        <div class="progress-block">
+          <div class="pct" id="overallPct">0%</div>
+          <div class="lbl">defense readiness</div>
+        </div>
+        <div class="row" style="margin-top:16px; gap:8px;">
+          <button class="btn secondary" style="flex:1; font-size:11px;" id="endEarlyBtn">End &amp; report</button>
+        </div>
+      </aside>
+      <div class="terminal">
+        <div class="terminal-head">
+          <div class="dots"><span></span><span></span><span></span></div>
+          <span id="termStatus">session active</span>
+        </div>
+        <div class="term-log" id="termLog"></div>
+        <div class="term-input" id="termInput"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= REPORT VIEW ================= -->
+  <section id="view-report" class="hidden">
+    <div id="reportContent"></div>
+  </section>
+
+  <!-- ================= HISTORY VIEW ================= -->
+  <section id="view-history" class="hidden">
+    <label class="field-label">Past sessions</label>
+    <div class="history-list" id="historyList"></div>
+  </section>
+
+</div>
+
+<script>
+(function(){
+
+/* ============================================================
+   STATE
+============================================================ */
+const LS_SESSIONS = 'dye_sessions_v1';
+const LS_DRAFT = 'dye_draft_v1';
+
+let state = {
+  resumeText: '',
+  audience: 'Campus placement / entry-level tech role',
+  claims: [],          // {id, text, category, status:'pending'|'weak'|'strong', confidence:0-100, notes:''}
+  history: [],         // {role:'interviewer'|'user', text, meta}
+  turnCount: 0,
+  maxTurns: 10,
+  finished: false,
+  sessionId: null,
+  startedAt: null
+};
+
+const SAMPLE_RESUME = `B.Tech Computer Science student at Integral University (graduating 2027), CGPA 8.5.
+Skills: Python, HTML, Streamlit, Machine Learning, Data Analysis, SQL, Git, GitHub.
+Projects:
+- Customer Segmentation using K-Means clustering
+- HR Bias Detection Dashboard
+- Student Finance Dashboard
+- Multiple AI applications built during a 50-day AI challenge
+Completed internships/training in Python and Machine Learning.
+Preparing for campus placement / entry-level tech interviews.`;
+
+/* ============================================================
+   UTIL
+============================================================ */
+function $(sel){ return document.querySelector(sel); }
+function $all(sel){ return document.querySelectorAll(sel); }
+function el(tag, cls, html){ const e=document.createElement(tag); if(cls)e.className=cls; if(html!==undefined)e.innerHTML=html; return e; }
+function uid(){ return Math.random().toString(36).slice(2,10); }
+function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+function showBanner(container, msg, type){
+  const b = el('div', 'banner' + (type==='err' ? ' err':''), msg);
+  container.innerHTML = '';
+  container.appendChild(b);
+  if(type!=='err'){ setTimeout(()=>{ if(b.parentNode) b.remove(); }, 6000); }
+}
+
+/* ============================================================
+   NAV
+============================================================ */
+function setView(name){
+  ['home','interview','report','history'].forEach(v=>{
+    $('#view-'+v).classList.toggle('hidden', v!==name);
+  });
+  $all('#mainNav button').forEach(b=> b.classList.toggle('active', b.dataset.view===name));
+  if(name==='history') renderHistory();
+}
+$all('#mainNav button').forEach(b=>{
+  b.addEventListener('click', ()=>{
+    if(b.dataset.view==='report' && !state.finished && state.history.length===0){
+      showBanner($('#banners'), 'No report yet — start a cross-examination first.', 'err');
+      setView('home'); return;
+    }
+    setView(b.dataset.view);
+  });
+});
+
+/* ============================================================
+   TYPED HERO LINE
+============================================================ */
+(function typeHero(){
+  const lines = [
+    '> loading claims from resume.txt ...',
+    '> initializing skeptical interviewer ...',
+    '> ready. state a claim about yourself.'
+  ];
+  const target = $('#typedLine');
+  let li=0, ci=0;
+  function step(){
+    if(li>=lines.length) return;
+    const line = lines[li];
+    target.innerHTML = '<span class="prompt">'+escapeHtml(line.slice(0,ci))+'</span><span class="cursor"></span>';
+    ci++;
+    if(ci<=line.length){ setTimeout(step, 22); }
+    else { setTimeout(()=>{ li++; ci=0; if(li<lines.length) step(); }, 900); }
+  }
+  step();
+})();
+
+/* ============================================================
+   HOME: file upload / drag-drop / sample load
+============================================================ */
+const dropZone = $('#dropZone');
+const fileInput = $('#fileInput');
+$('#browseBtn').addEventListener('click', ()=> fileInput.click());
+fileInput.addEventListener('change', e=>{ if(e.target.files[0]) readFile(e.target.files[0]); });
+['dragenter','dragover'].forEach(evt=> dropZone.addEventListener(evt, e=>{ e.preventDefault(); dropZone.classList.add('drag'); }));
+['dragleave','drop'].forEach(evt=> dropZone.addEventListener(evt, e=>{ e.preventDefault(); dropZone.classList.remove('drag'); }));
+dropZone.addEventListener('drop', e=>{
+  const f = e.dataTransfer.files[0];
+  if(f) readFile(f);
+});
+function readFile(f){
+  if(!/\.(txt|md)$/i.test(f.name)){
+    showBanner($('#banners'), 'Only .txt/.md read directly — please paste content from PDFs/DOCX instead.', 'err');
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = ()=>{ $('#resumeText').value = reader.result; showBanner($('#banners'), 'File loaded: ' + f.name); };
+  reader.readAsText(f);
+}
+$('#loadSampleBtn').addEventListener('click', ()=>{
+  $('#resumeText').value = SAMPLE_RESUME;
+});
+
+/* restore draft */
+(function restoreDraft(){
+  try{
+    const d = JSON.parse(localStorage.getItem(LS_DRAFT) || 'null');
+    if(d && d.resumeText) $('#resumeText').value = d.resumeText;
+    if(d && d.audience) $('#audienceSelect').value = d.audience;
+  }catch(e){}
+})();
+$('#resumeText').addEventListener('input', saveDraft);
+$('#audienceSelect').addEventListener('change', saveDraft);
+function saveDraft(){
+  localStorage.setItem(LS_DRAFT, JSON.stringify({ resumeText: $('#resumeText').value, audience: $('#audienceSelect').value }));
+}
+
+/* ============================================================
+   CLAUDE API CALL
+============================================================ */
+async function callClaude(systemPrompt, userPrompt, {retries=2} = {}){
+  const body = {
+    model: "claude-sonnet-4-6",
+    max_tokens: 1000,
+    system: systemPrompt,
+    messages: [{ role:"user", content: userPrompt }]
+  };
+  for(let attempt=0; attempt<=retries; attempt++){
+    try{
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify(body)
+      });
+      if(res.status===429 || res.status===529){
+        if(attempt<retries){ await new Promise(r=>setTimeout(r, 1200*(attempt+1))); continue; }
+        throw new Error('rate_limited');
+      }
+      if(!res.ok){ throw new Error('http_'+res.status); }
+      const data = await res.json();
+      const textBlock = (data.content||[]).find(c=>c.type==='text');
+      if(!textBlock) throw new Error('empty_response');
+      return textBlock.text;
+    }catch(err){
+      if(attempt>=retries) throw err;
+      await new Promise(r=>setTimeout(r, 900*(attempt+1)));
+    }
+  }
+}
+function parseJsonLoose(text){
+  let t = text.trim().replace(/^```json/i,'').replace(/^```/,'').replace(/```$/,'').trim();
+  const first = t.indexOf('{'); const last = t.lastIndexOf('}');
+  if(first>-1 && last>first) t = t.slice(first, last+1);
+  return JSON.parse(t);
+}
+
+/* ============================================================
+   START INTERVIEW: extract claims
+============================================================ */
+$('#startBtn').addEventListener('click', async ()=>{
+  const txt = $('#resumeText').value.trim();
+  if(!txt){ showBanner($('#banners'), 'Paste or upload something to defend first.', 'err'); return; }
+  state.resumeText = txt;
+  state.audience = $('#audienceSelect').value;
+  state.sessionId = uid();
+  state.startedAt = Date.now();
+  state.claims = [];
+  state.history = [];
+  state.turnCount = 0;
+  state.finished = false;
+
+  setView('interview');
+  const log = $('#termLog');
+  log.innerHTML = '';
+  renderInterviewerTyping('extracting claims from your material...');
+
+  const sys = `You are an expert technical recruiter's claim-extraction module. Given a person's resume/experience text, extract 5 to 8 distinct, concrete, checkable claims (skills, projects, metrics, responsibilities, outcomes) that a skeptical interviewer could challenge. Avoid duplicates and generic filler. Respond ONLY with strict JSON, no markdown, no preamble, in this exact shape:
+{"claims":[{"id":"c1","text":"short claim text (max 12 words)","category":"project|skill|metric|role|education"}]}`;
+  const usr = `Resume/experience text:\n"""${txt}"""\n\nAudience/context: ${state.audience}.\nExtract the claims now.`;
+
+  try{
+    const raw = await callClaude(sys, usr);
+    const parsed = parseJsonLoose(raw);
+    state.claims = (parsed.claims||[]).map(c=>({ id:c.id||uid(), text:c.text, category:c.category||'claim', status:'pending', confidence:0, notes:'' }));
+    if(state.claims.length===0) throw new Error('no_claims');
+  }catch(err){
+    showBanner($('#interviewBanners'), 'Could not extract claims automatically (temporary API issue). Using a general breakdown instead.', 'err');
+    state.claims = [
+      { id:uid(), text:'Overall technical skill set', status:'pending', confidence:0, category:'skill', notes:'' },
+      { id:uid(), text:'Most significant project', status:'pending', confidence:0, category:'project', notes:'' },
+      { id:uid(), text:'Academic performance / CGPA', status:'pending', confidence:0, category:'education', notes:'' }
+    ];
+  }
+  renderClaimList();
+  clearTermLog();
+  await nextQuestion(null);
+});
+
+/* ============================================================
+   INTERVIEW LOOP
+============================================================ */
+function clearTermLog(){ $('#termLog').innerHTML=''; }
+
+function renderInterviewerTyping(label){
+  const log = $('#termLog');
+  const wrap = el('div','msg interviewer');
+  wrap.innerHTML = `<div class="who">interviewer</div><div class="typing-indicator" id="typingNode"><span></span><span></span><span></span></div>`;
+  if(label){ const l = el('div','hint'); l.textContent=label; wrap.appendChild(l); }
+  log.appendChild(wrap);
+  log.scrollTop = log.scrollHeight;
+  return wrap;
+}
+function removeTypingNode(node){ if(node && node.parentNode) node.remove(); }
+
+function addMessage(role, text, metaTag){
+  const log = $('#termLog');
+  const wrap = el('div', 'msg ' + (role==='interviewer'?'interviewer':'user'));
+  let metaHtml = '';
+  if(metaTag){ metaHtml = `<span class="meta-tag ${metaTag.type}">${escapeHtml(metaTag.label)}</span><br>`; }
+  wrap.innerHTML = `<div class="who">${role==='interviewer'?'interviewer':'you'}</div><div class="body">${metaHtml}${escapeHtml(text)}</div>`;
+  log.appendChild(wrap);
+  log.scrollTop = log.scrollHeight;
+}
+
+function renderClaimList(){
+  const wrap = $('#claimList');
+  wrap.innerHTML = '';
+  state.claims.forEach(c=>{
+    const item = el('div','claim-item');
+    item.dataset.status = c.status;
+    item.innerHTML = `<div class="ctext">${escapeHtml(c.text)}</div>
+      <div class="cmeter"><i style="width:${c.confidence}%"></i></div>
+      <div class="clabel">${c.status}</div>`;
+    wrap.appendChild(item);
+  });
+  const avg = state.claims.length ? Math.round(state.claims.reduce((a,c)=>a+c.confidence,0)/state.claims.length) : 0;
+  $('#overallPct').textContent = avg + '%';
+}
+
+function buildContextSummary(){
+  return state.claims.map(c=> `[${c.id}] (${c.status}, conf:${c.confidence}) ${c.text}`).join('\n');
+}
+
+async function nextQuestion(lastUserAnswer){
+  state.turnCount++;
+  const done = state.turnCount > state.maxTurns;
+  const typingNode = renderInterviewerTyping();
+
+  const sys = `You are a sharp, skeptical technical interviewer conducting a live "defend your experience" cross-examination for: ${state.audience}.
+Rules:
+- You only ask about claims derived from the candidate's own material below — never generic textbook questions.
+- Every question must reference specifics (numbers, tools, project names) from their claims or previous answers.
+- If their last answer was vague, generic, or unverifiable, dig deeper on the SAME claim with a sharper follow-up. If it was specific and convincing, mark it strong and move to a new/weaker claim.
+- Escalate difficulty slightly as the session progresses.
+- Prefer multiple-choice (mcq) framing when the question naturally has a few realistic response angles (e.g. "which part would you emphasize", "what was the actual outcome"), otherwise use open-ended.
+- Keep questions concise, direct, realistic interviewer language, 1-2 sentences.
+- Never invent facts about the candidate not present in their material or answers.
+
+Respond ONLY with strict JSON, no markdown fences, in this exact shape:
+{
+  "evaluation": {"claimId":"<id or null>", "verdict":"strong|weak|neutral", "confidenceDelta": <int -30 to 30>, "feedback":"one short sentence, direct, coach-like"},
+  "question": {"text":"the next question", "type":"mcq|open", "options": ["opt1","opt2","opt3"], "targetClaimId":"<id>"}
+}
+If this is the very first question (no previous answer), set evaluation.claimId to null, verdict "neutral", confidenceDelta 0, feedback "".
+If ending the session (finalTurn=true passed below), instead of a new question ask a concluding reflection question, type "open".`;
+
+  const usr = `Candidate material:\n"""${state.resumeText}"""\n\nClaims tracked so far:\n${buildContextSummary()}\n\nConversation so far (last 6 turns):\n${state.history.slice(-6).map(h=>`${h.role}: ${h.text}`).join('\n') || '(none yet)'}\n\nCandidate's latest answer: ${lastUserAnswer ? '"'+lastUserAnswer+'"' : '(none — this is the opening question)'}\n\nTurn number: ${state.turnCount} of ${state.maxTurns}. finalTurn=${done}`;
+
+  try{
+    const raw = await callClaude(sys, usr);
+    const parsed = parseJsonLoose(raw);
+    removeTypingNode(typingNode);
+
+    // apply evaluation to previous claim
+    if(parsed.evaluation && parsed.evaluation.claimId){
+      const claim = state.claims.find(c=>c.id===parsed.evaluation.claimId);
+      if(claim){
+        claim.confidence = Math.max(0, Math.min(100, claim.confidence + (parsed.evaluation.confidenceDelta||0)));
+        if(parsed.evaluation.verdict==='strong') claim.status = claim.confidence>=60 ? 'strong':'weak';
+        else if(parsed.evaluation.verdict==='weak') claim.status='weak';
+        claim.notes = parsed.evaluation.feedback || claim.notes;
+      }
+      if(parsed.evaluation.feedback){
+        addMessage('interviewer', parsed.evaluation.feedback, {type: parsed.evaluation.verdict==='strong'?'strong':'weak', label: parsed.evaluation.verdict});
+      }
+    }
+    renderClaimList();
+
+    if(done){
+      addMessage('interviewer', parsed.question ? parsed.question.text : 'That wraps our session — thanks for defending your experience today.');
+      state.history.push({role:'interviewer', text: parsed.question ? parsed.question.text : 'Session complete.'});
+      finishInterview();
+      return;
+    }
+
+    const q = parsed.question;
+    state.history.push({role:'interviewer', text:q.text});
+    addMessage('interviewer', q.text);
+    renderInputForQuestion(q);
+  }catch(err){
+    removeTypingNode(typingNode);
+    showBanner($('#interviewBanners'), 'Temporary issue reaching the interviewer (rate limit or network). Try again.', 'err');
+    renderRetryInput(lastUserAnswer);
+  }
+}
+
+function renderRetryInput(lastUserAnswer){
+  const inputArea = $('#termInput');
+  inputArea.innerHTML = '';
+  const btn = el('button','btn'); btn.textContent='Retry question ->';
+  btn.addEventListener('click', ()=> nextQuestion(lastUserAnswer));
+  inputArea.appendChild(btn);
+}
+
+function renderInputForQuestion(q){
+  const inputArea = $('#termInput');
+  inputArea.innerHTML = '';
+  if(q.type==='mcq' && Array.isArray(q.options) && q.options.length){
+    const optWrap = el('div','mcq-options');
+    q.options.forEach((opt,i)=>{
+      const b = el('button','mcq-btn');
+      b.innerHTML = `<span class="k">${String.fromCharCode(65+i)}.</span>${escapeHtml(opt)}`;
+      b.addEventListener('click', ()=> submitAnswer(opt));
+      optWrap.appendChild(b);
+    });
+    inputArea.appendChild(optWrap);
+    const freeToggle = el('div','free-input');
+    const inp = el('input'); inp.placeholder='...or type your own answer';
+    const send = el('button','btn'); send.textContent='Send';
+    freeToggle.appendChild(inp); freeToggle.appendChild(send);
+    inputArea.appendChild(freeToggle);
+    const go = ()=>{ if(inp.value.trim()) submitAnswer(inp.value.trim()); };
+    send.addEventListener('click', go);
+    inp.addEventListener('keydown', e=>{ if(e.key==='Enter') go(); });
+  } else {
+    const freeWrap = el('div','free-input');
+    const inp = el('input'); inp.placeholder='Type your answer...';
+    const send = el('button','btn'); send.textContent='Send';
+    freeWrap.appendChild(inp); freeWrap.appendChild(send);
+    inputArea.appendChild(freeWrap);
+    const go = ()=>{ if(inp.value.trim()) submitAnswer(inp.value.trim()); };
+    send.addEventListener('click', go);
+    inp.addEventListener('keydown', e=>{ if(e.key==='Enter') go(); });
+    setTimeout(()=>inp.focus(), 50);
+  }
+}
+
+function submitAnswer(text){
+  addMessage('user', text);
+  state.history.push({role:'user', text});
+  $('#termInput').innerHTML = '';
+  nextQuestion(text);
+}
+
+$('#endEarlyBtn').addEventListener('click', ()=>{
+  if(confirm('End this session now and generate your Defense Report?')) finishInterview();
+});
+
+/* ============================================================
+   FINISH + REPORT
+============================================================ */
+function finishInterview(){
+  state.finished = true;
+  const session = {
+    id: state.sessionId,
+    startedAt: state.startedAt,
+    endedAt: Date.now(),
+    audience: state.audience,
+    resumeText: state.resumeText,
+    claims: state.claims,
+    history: state.history
+  };
+  const all = getAllSessions();
+  all.unshift(session);
+  localStorage.setItem(LS_SESSIONS, JSON.stringify(all.slice(0,30)));
+  renderReport(session);
+  setView('report');
+}
+
+function getAllSessions(){
+  try{ return JSON.parse(localStorage.getItem(LS_SESSIONS)||'[]'); }catch(e){ return []; }
+}
+
+function renderReport(session){
+  const claims = session.claims;
+  const avg = claims.length ? Math.round(claims.reduce((a,c)=>a+c.confidence,0)/claims.length) : 0;
+  const strong = claims.filter(c=>c.status==='strong');
+  const weak = claims.filter(c=>c.status==='weak');
+  const pending = claims.filter(c=>c.status==='pending');
+
+  const container = $('#reportContent');
+  container.innerHTML = '';
+
+  const head = el('div','report-head');
+  head.innerHTML = `<div class="eyebrow" style="color:var(--green); letter-spacing:3px; font-size:12px;">DEFENSE REPORT</div>
+    <div class="score">${avg}<small>/100</small></div>
+    <p class="hint" style="margin-top:6px;">overall readiness across ${claims.length} claims &middot; ${session.audience}</p>`;
+  container.appendChild(head);
+
+  const bars = el('div','bars');
+  claims.forEach(c=>{
+    const row = el('div','bar-row');
+    row.innerHTML = `<div class="label-row"><span>${escapeHtml(c.text)}</span><span>${c.confidence}%</span></div>
+      <div class="bar-track"><div class="bar-fill ${c.status}" style="width:${c.confidence}%"></div></div>`;
+    bars.appendChild(row);
+  });
+  container.appendChild(bars);
+
+  const cols = el('div','report-cols');
+  const goodPanel = el('div','report-panel good');
+  goodPanel.innerHTML = '<h4>Well defended</h4>';
+  if(strong.length===0){ goodPanel.appendChild(el('div','hint','None yet — keep practicing these claims.')); }
+  strong.forEach(c=>{
+    const it = el('div','rp-item');
+    it.innerHTML = `${escapeHtml(c.text)}<div class="fix">${escapeHtml(c.notes||'Consistent, specific, and convincing under pressure.')}</div>`;
+    goodPanel.appendChild(it);
+  });
+
+  const badPanel = el('div','report-panel bad');
+  badPanel.innerHTML = '<h4>Needs work</h4>';
+  const needsWork = [...weak, ...pending];
+  if(needsWork.length===0){ badPanel.appendChild(el('div','hint','Everything held up under questioning. Well done.')); }
+  needsWork.forEach(c=>{
+    const it = el('div','rp-item');
+    it.innerHTML = `${escapeHtml(c.text)}<div class="fix">${escapeHtml(c.notes || 'Prepare a specific example: what you did, the tools used, and the measurable result.')}</div>`;
+    badPanel.appendChild(it);
+  });
+
+  cols.appendChild(goodPanel); cols.appendChild(badPanel);
+  container.appendChild(cols);
+
+  const actions = el('div','row', '');
+  actions.style.marginTop='20px';
+  const exportBtn = el('button','btn'); exportBtn.textContent='Export report (.txt)';
+  exportBtn.addEventListener('click', ()=> exportReport(session));
+  const restartBtn = el('button','btn secondary'); restartBtn.textContent='New session';
+  restartBtn.addEventListener('click', ()=> setView('home'));
+  actions.appendChild(exportBtn); actions.appendChild(restartBtn);
+  container.appendChild(actions);
+}
+
+function exportReport(session){
+  const avg = session.claims.length ? Math.round(session.claims.reduce((a,c)=>a+c.confidence,0)/session.claims.length) : 0;
+  let out = `DEFEND YOUR EXPERIENCE — DEFENSE REPORT\n`;
+  out += `Audience: ${session.audience}\nOverall readiness: ${avg}/100\nDate: ${new Date(session.startedAt).toLocaleString()}\n\n`;
+  out += `CLAIMS:\n`;
+  session.claims.forEach(c=>{
+    out += `- [${c.status.toUpperCase()}] ${c.text} (${c.confidence}%)\n  note: ${c.notes||'-'}\n`;
+  });
+  out += `\nTRANSCRIPT:\n`;
+  session.history.forEach(h=>{ out += `${h.role==='interviewer'?'INTERVIEWER':'YOU'}: ${h.text}\n`; });
+  const blob = new Blob([out], {type:'text/plain'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `defense-report-${session.id}.txt`;
+  a.click();
+}
+
+/* ============================================================
+   HISTORY
+============================================================ */
+function renderHistory(){
+  const list = $('#historyList');
+  const sessions = getAllSessions();
+  list.innerHTML='';
+  if(sessions.length===0){
+    const e = el('div','empty-state');
+    e.innerHTML = '<div class="glyph">&#9634;</div><div>No past sessions yet.<br>Run a cross-examination to build history.</div>';
+    list.appendChild(e);
+    return;
+  }
+  sessions.forEach(s=>{
+    const avg = s.claims.length ? Math.round(s.claims.reduce((a,c)=>a+c.confidence,0)/s.claims.length) : 0;
+    const item = el('div','history-item');
+    item.innerHTML = `<div class="hi-left"><div class="hi-title">${escapeHtml(s.audience)}</div>
+      <div class="hi-meta">${new Date(s.startedAt).toLocaleString()} &middot; ${s.claims.length} claims</div></div>
+      <div class="row"><span class="hi-score">${avg}%</span></div>`;
+    const viewBtn = el('button','btn secondary'); viewBtn.style.fontSize='11px'; viewBtn.textContent='View report';
+    viewBtn.addEventListener('click', ()=>{ renderReport(s); setView('report'); });
+    item.querySelector('.row').appendChild(viewBtn);
+    list.appendChild(item);
+  });
+}
+
+})();
+</script>
+</body>
+</html>
