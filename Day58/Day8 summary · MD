@@ -1,0 +1,60 @@
+# AI Interview Coach — Day 8 Summary
+
+**Day:** 8 of 10 | **Focus:** Testing, Debugging & Production Optimization
+
+## Senior QA/Security/Performance Review — Findings & Fixes
+
+A full review was conducted before writing any code, covering bugs, edge cases, error handling, validation, API failures, empty/offline states, performance, duplicate code, and security. Findings, ranked by severity:
+
+| # | Severity | Issue | Status |
+|---|---|---|---|
+| 1 | 🔴 High | All-or-nothing AI feedback fallback — one malformed JSON field discarded an entire real evaluation | ✅ Fixed — per-field safe coercion |
+| 2 | 🔴 High | No score/confidence bounds validation — malformed AI output could show `score: 15` | ✅ Fixed — clamped to valid ranges, regression-tested |
+| 3 | 🟠 Medium | No input length limits on JD/resume/answers — risk of API token-limit failures | ✅ Fixed — truncation at 4000/6000 chars, plus UI-level `max_chars` |
+| 4 | 🟠 Medium | DB connections not guaranteed to close on exception | ✅ Fixed — context-managed connections with `try/finally` |
+| 5 | 🟠 Medium | No indexes on foreign key columns | ✅ Fixed — indexes added on `session_id`, `question_id`, `answer_id` |
+| 6 | 🟠 Medium | New Groq client created on every single API call | ✅ Fixed — `@st.cache_resource` caches the provider instance |
+| 7 | 🟡 Low | Duplicated `session_state` key lists across files | ✅ Fixed — centralized in `core/session_utils.py` |
+| 8 | 🟡 Low | No automated tests existed | ✅ Fixed — 28 tests added |
+| 9 | 🟢 Info | SQL injection review | No issues — all queries parameterized |
+| 10 | 🟢 Info | XSS review | No issues — user text never rendered with `unsafe_allow_html` |
+
+## What Was Completed Today
+
+- ✅ Rewrote `core/ai_provider.py` with defensive per-field coercion (`_safe_str`, `_safe_list`, `_safe_score`, `_safe_confidence`) and input truncation
+- ✅ Rewrote `core/db.py` with context-managed connections (guaranteed cleanup) and 3 new indexes
+- ✅ Updated `core/services.py` to cache the AI provider via `@st.cache_resource`
+- ✅ Added `core/session_utils.py` — single source of truth for practice-session state keys
+- ✅ Updated `pages/practice_session.py` to use the new helper and added a `max_chars=4000` guard on the answer input
+- ✅ **Added 28 automated tests** (`tests/test_db.py`, `tests/test_ai_provider.py`) — all run offline with mocked AI calls and a temporary test database, no API key or cost required
+- ✅ **All 28 tests passed**, including a direct regression test for the critical score-clamping bug (Finding #2)
+- ✅ Verified the refactor didn't break the live application (full session walkthrough, real varying scores 7.4–8.8, correct 8.1/10 average)
+- ✅ Ran a 9-point manual edge-case checklist covering input edge cases, navigation edge cases, data edge cases, and network failure — **all passed with no errors**
+- ✅ Deployed to Streamlit Cloud and confirmed the hardened version is live in production
+
+## Verification Checklist
+
+- [x] Full session walkthrough works after refactor (real AI, varying scores, correct averaging)
+- [x] All 28 automated tests pass
+- [x] Empty answer submission blocked client-side
+- [x] Long JD/resume/answer inputs handled without crashing
+- [x] Invalid PDF upload handled gracefully
+- [x] Direct navigation to Practice Session without an active session handled gracefully
+- [x] Abandoned/partial sessions display correctly in History
+- [x] Network failure during AI call shows a friendly error, not a raw traceback
+- [x] Live deployed app confirmed working post-hardening
+
+## Key Decisions Made Today
+
+1. **Per-field safe coercion over all-or-nothing fallback**: previously, one bad field in an otherwise-good AI response discarded the entire real evaluation. Now each field is independently validated/clamped/defaulted, so real AI content is preserved whenever possible — only a total parse failure triggers the Mock fallback.
+2. **`@st.cache_resource` for the AI provider**: eliminates redundant client instantiation on every single AI call, a meaningful performance improvement with zero behavior change.
+
+## What Remains Before Launch
+
+- Final documentation pass (README, live demo link, screenshots) — scheduled Day 10
+- Final visual QA / demo rehearsal — scheduled Day 10
+- No known bugs, no known crashes, no known security issues remaining
+
+## 🎯 Tomorrow's Objective (Day 9)
+
+Per the Blueprint, Day 9 was originally scheduled for deployment — since deployment already happened (Days 6–8), Day 9 will focus on **deployment hardening and final production configuration**: confirming Streamlit Secrets are correctly set for the live app, reviewing `.gitignore`/secret hygiene one final time, and doing a last full production walkthrough from a completely fresh browser session (no cached state) to simulate exactly what a recruiter would experience.
