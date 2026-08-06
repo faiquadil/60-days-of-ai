@@ -1,0 +1,62 @@
+# AI Interview Coach — Challenge Retrospective
+
+**AB Talks 60-Day Claude AI Challenge — 10-Day Capstone**
+
+## Timeline: Day 1 → Day 10
+
+**Day 1 — Discovery.** Started with no fixed idea, discovered AI Interview Coach through a structured interview: CS background, Python/Streamlit/AI-API strengths, interest in HR/recruitment problems. Landed on a candidate-facing interview coach after explicitly scoping out recruiter-facing features and multi-user auth to protect the 10-day timeline. Deliverables: PRD, 9-day Implementation Blueprint, Pitch Deck.
+
+**Day 2 — System Design.** Finalized architecture (Streamlit monolith with UI/Service/AI/Data layering), SQLite schema, internal service-layer "API," and low-fi wireframes. Introduced `core/services.py` as a design refinement — not in the original Day 1 plan, but added specifically so the "API Design" deliverable would mean something for a Streamlit app with no real HTTP endpoints. This one decision paid off repeatedly later.
+
+**Day 3 — Foundation.** Environment setup hit its first real obstacle: `pandas==2.2.2` failed to build on Windows/Python 3.13 (no prebuilt wheel). Fixed by bumping to `2.2.3`. Then, requesting a Claude API key revealed Anthropic now requires prepaid credits — no guaranteed free trial. Rather than block on a purchase decision, built `MockProvider` as a stand-in behind the `AIProvider` interface designed the day before. This turned a blocker into validation of the architecture.
+
+**Day 4 — Question Generation.** Built the real input UI (role/JD/resume), resume PDF parsing, and `core/services.py`'s `start_session()`. Verified all three input paths (role-only, +JD, +resume) against `MockProvider` with zero real AI cost.
+
+**Day 5 — The Pivot.** Attempted real AI integration — discovered the Anthropic prepaid-credit requirement was a hard blocker without spending money. Made the explicit decision to switch to **Groq** (free, no credit card, Llama 3.3 70B) instead. Implemented `GroqProvider` against the *exact same* `AIProvider` interface from Day 2 — no other file needed to change. Also debugged a real dependency conflict (`groq==0.11.0` needed `httpx==0.27.2`, not the latest). This was the day the Day 2 architecture bet was fully validated.
+
+**Day 6 — MVP Completion & First Deployment Attempt.** Built History and Dashboard pages, added the required footer, and attempted deployment. Hit a wall: Streamlit Cloud's build environment failed to install `pandas`. Multiple fix attempts were made but not visually confirmed before the session ended — an honest, documented "code-complete but unverified" state rather than a false completion claim.
+
+**Day 7 — The Real Root Cause.** Picked up Day 6's unresolved deployment. What looked like a pandas problem was actually Streamlit Cloud running **Python 3.14** — a brand-new runtime with poor early package-wheel coverage. Traced through six cascading failures (pandas → pillow → pyarrow, each needing a version bump, each revealing the next) before finding the actual fix: pin Python 3.11 via the platform's dashboard setting, not just a `runtime.txt` file. The app went live. Then completed the day's actual scheduled work — a full visual polish pass (custom theme, icons, consistent states) — and reconfirmed it carried over to production.
+
+**Day 8 — Production Hardening.** Conducted a formal QA/security/performance review before writing code, surfacing 8 real findings (from a critical "one bad AI field discards a whole evaluation" bug down to code-quality nits). Rewrote the AI-response handling with per-field safe coercion instead of all-or-nothing fallback, added guaranteed database connection cleanup, added indexes, cached the AI provider client, and wrote 28 automated tests — including a direct regression test for the score-clamping bug. All 28 passed on the first full run.
+
+**Day 9 — Release Readiness.** Wrote the professional README, added an MIT license, configured GitHub repo metadata, and made a deliberate, documented decision to skip social/OG-tag metadata for v1.0 rather than risk an unsupported Streamlit workaround. Hit one more small snag — GitHub's secret-scanning push protection caught the Groq key accidentally in an early README draft — a good final reminder of the secret-hygiene discipline maintained since Day 3.
+
+**Day 10 — Graduation.** Final review, portfolio materials, and v1.0.0 release.
+
+## Major Technical Decisions & Pivots
+
+1. **`core/services.py` as a Day 2 refinement** — not originally planned, added to make the internal API design meaningful. Became the single seam that absorbed every later change.
+2. **MockProvider as a first-class fallback, not just a placeholder** (Day 3) — turned a payment blocker into zero lost time.
+3. **Anthropic → Groq pivot** (Day 5) — the single biggest real-world adaptation of the whole build, and the clearest proof the `AIProvider` abstraction was worth designing on Day 2.
+4. **Root-causing over patching** (Day 7) — six failed fixes before finding the actual Python-version issue; the lesson was reading the *full* log, not just the last error line.
+5. **Per-field AI response validation over all-or-nothing** (Day 8) — a subtle but important correctness fix: real AI content should survive one bad field, not get discarded entirely.
+
+## Skills Demonstrated
+
+- Product discovery and deliberate scope protection (Day 1)
+- System architecture design under a hard timeline (Day 2)
+- Real-world dependency and environment debugging (Days 3, 6, 7)
+- Adapting architecture to real-world constraints without a rewrite (Day 5)
+- AI prompt engineering and structured JSON output design (Days 2, 4, 5)
+- Defensive programming for unreliable external APIs (Day 8)
+- Automated testing with mocked external dependencies (Day 8)
+- Production deployment troubleshooting via systematic log analysis (Day 7)
+- Professional documentation and release management (Days 9–10)
+
+## Final Project Summary
+
+AI Interview Coach is a fully deployed, tested, production-hardened AI web application: real LLM-generated interview questions (optionally personalized), detailed 8-dimension AI feedback per answer, persistent session history, and an analytics dashboard — built entirely on free-tier tools, with 28 passing automated tests and a documented, defensible architecture.
+
+## Lessons Learned
+
+- **An abstraction is only proven once it survives a real change under pressure** — the `AIProvider` interface was a good idea on Day 2; it became a *proven* good idea on Day 5.
+- **"Code-complete" and "verified working" are different claims, and conflating them costs more time later** — the Day 6/7 deployment saga was long specifically because early attempts didn't distinguish between the two.
+- **The first error message is often not the real one** — true on Day 3 (pandas), and true again, more expensively, on Day 7 (six layers deep).
+- **Free-tier constraints are a legitimate design input, not just a budget footnote** — they directly shaped two of this project's most important decisions (Days 3 and 5).
+
+## A Farewell, From Your AI Pair Programmer
+
+We started this on Day 1 with nothing but your Python background and a blank page, and ten days later there's a real, live, tested application with your name on it. I want to name what actually happened here, because it's easy to undersell: you didn't just follow a tutorial. On Day 5, when the Anthropic API turned out to cost money, you made a real engineering call under real constraints — and it worked because the architecture from Day 2 was built to absorb exactly that kind of change. On Day 7, when deployment kept failing in new ways, you didn't stop after the third fix attempt — we kept reading logs together until we found the actual cause, six layers down. That's not luck. That's the instinct good engineers build over years, and you built it in a week.
+
+The 60-day challenge gave you the foundations — prompting, reasoning, workflows, agentic thinking. This capstone is where those foundations became a habit: discovery, design, implementation, debugging, hardening, and release, in that order, for real. Whatever you build next, you now know what it feels like to ship something real under real pressure. That's the part that doesn't go away. Congratulations — this one's genuinely yours.
