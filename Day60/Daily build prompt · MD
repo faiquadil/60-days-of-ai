@@ -1,0 +1,64 @@
+# Daily Build Prompt — AI Interview Coach 30-Day Growth Plan
+
+Use this exact prompt every day of the 30-day growth plan, changing only the day number. Paste it at the start of a fresh conversation, with the project's GitHub repo linked or key files attached as needed.
+
+---
+
+```
+Day [X] of the AI Interview Coach 30-Day Growth Plan
+
+This is a continuation of a project that was originally built as a 10-day capstone
+for the AB Talks 60-Day Claude AI Challenge, and is now being extended via a
+30-day-growth-plan.md roadmap. Use 30-day-growth-plan.md as the source of truth for
+what today's milestone is. If you don't have it, ask me to upload it before continuing.
+
+Also treat these existing project documents as source of truth if relevant to today's
+work: README.md, docs/ARCHITECTURE.md, docs/SCHEMA.md, docs/API.md, and
+challenge-retrospective.md (for context on past decisions and why they were made).
+
+Do not redesign the existing architecture. The project uses a layered
+UI / Service (core/services.py) / AI (core/ai_provider.py) / Data (core/db.py)
+structure with an AIProvider abstraction — new work should fit into this structure,
+not replace it.
+
+Assume I have working knowledge of the codebase but may need step-by-step guidance
+for new tools, services, or commands I haven't used before. Whenever I need to
+perform a manual step (installing packages, configuring a service, deploying,
+running commands), give me exact step-by-step instructions using real button names,
+menu names, and terminal commands. Wait for my confirmation before continuing.
+
+Prioritize implementation over explanation. Generate complete, final file contents —
+never snippets, placeholders, or "add this below" instructions.
+
+For today's milestone:
+1. Briefly explain what we're building and why it matters for the overall 30-day plan.
+2. Show every file to be created or modified, complete and ready to use.
+3. Provide every command I need to run.
+4. If today's milestone includes a new feature, add or update automated tests for it,
+   matching the existing tests/ pattern (mocked external calls, temporary test database).
+5. Verify today's work actually functions before considering it done — ask me to run
+   it locally and confirm before we call today complete. Do not mark a milestone done
+   without a confirmation or screenshot.
+6. If today's plan turns out to be blocked by something unexpected, don't stall —
+   apply the project's established fallback pattern: build behind the existing
+   abstraction using a mock/stub, note it clearly, and flag it as a follow-up.
+
+End of day:
+- Confirm everything built today actually works (locally, and live if deployed today).
+- Update README.md and any other affected documentation.
+- Help me write a clear git commit message and push to GitHub.
+- Give a concise summary of what was completed and what tomorrow's milestone will be,
+  per 30-day-growth-plan.md.
+
+Never optimize for brevity over correctness. Optimize for finishing today's milestone
+with something real, working, and verified — exactly like the discipline used to
+build the original 10-day v1.0.0 release.
+```
+
+---
+
+## Usage Notes
+
+- Replace `[X]` with the actual day number (1–30) each time.
+- If a day's milestone naturally spans more than one conversation, that's fine — just note where you left off when starting the next session, the same way the original 10-day build carried context across days.
+- If you significantly deviate from the 30-day plan (a new idea, a blocker that changes scope), update `30-day-growth-plan.md` itself before continuing, so it stays the accurate source of truth — exactly as `challenge-retrospective.md` documents happening during the original build (e.g., the Day 5 Groq pivot).
