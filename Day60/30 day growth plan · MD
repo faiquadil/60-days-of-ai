@@ -1,0 +1,54 @@
+# AI Interview Coach — 30-Day Growth Plan
+
+**Starting point:** v1.0.0 (deployed, tested, documented) | **Stack:** Streamlit + Groq/Llama 3.3 + SQLite
+
+One achievable milestone per day. Each day builds on the previous one — no day requires skipping ahead. Grouped into four weekly themes drawn directly from `future-scope.md`.
+
+## Week 1: Voice Input (the original v1.0 stretch goal)
+
+- **Day 1:** Research free browser-based speech-to-text options compatible with Streamlit (e.g., a JS component via `st.components.v1.html`, or `streamlit-webrtc`). Pick one and get a minimal "record and transcribe" proof of concept running standalone.
+- **Day 2:** Integrate the POC into a new optional input mode on `pages/practice_session.py`, alongside the existing text area — don't replace it yet.
+- **Day 3:** Wire transcribed text into the exact same `services.submit_answer()` call the text path already uses. No changes needed to `core/services.py` or `ai_provider.py`.
+- **Day 4:** Add a loading/recording state UI (waveform or simple "listening..." indicator) so users get feedback while speaking.
+- **Day 5:** Handle edge cases: silence, very short recordings, browser mic permission denial — friendly errors, no crashes.
+- **Day 6:** Write 3–5 automated tests for the new transcription-to-answer pipeline (mocked, like the existing AI tests).
+- **Day 7:** Deploy, verify live, update README with the new feature. **Milestone: voice input shipped.**
+
+## Week 2: Advanced Analytics
+
+- **Day 8:** Design the new dashboard sections on paper: technical-vs-behavioral score breakdown, top missing keywords across all sessions.
+- **Day 9:** Add `db.get_score_breakdown_by_type(session_id=None)` — aggregates scores grouped by `question_type`, reusing the existing `feedback`/`questions` join pattern from `get_dashboard_stats()`.
+- **Day 10:** Add `db.get_keyword_frequency()` — parses the existing `keywords_missing` comma-separated column across all feedback rows and counts frequency.
+- **Day 11:** Build the UI for the technical-vs-behavioral breakdown chart in `ui/dashboard_charts.py`.
+- **Day 12:** Build the "most commonly missing keywords" UI component — a simple bar chart or ranked list.
+- **Day 13:** Add automated tests for both new aggregation functions.
+- **Day 14:** Deploy, verify live, update README/screenshots. **Milestone: advanced analytics shipped.**
+
+## Week 3: Recruiter View (Foundation)
+
+- **Day 15:** Design (on paper, like Day 2 of the original build) a minimal recruiter flow: define a role/JD once, view multiple sessions against it. Decide: same app with a mode toggle, or separate page?
+- **Day 16:** Add a `recruiter_view` flag or separate `pages/recruiter_dashboard.py` skeleton — no logic yet, just navigation and layout.
+- **Day 17:** Build `services.get_sessions_by_role(role)` — filters existing sessions, no schema change needed.
+- **Day 18:** Build the side-by-side session comparison UI — reuse `ui/feedback_card.py`-style rendering, adapted for a compact multi-session view.
+- **Day 19:** Add sorting/filtering (by score, by date) to the recruiter view.
+- **Day 20:** Manual QA pass — this is new user-facing surface area, so a structured test checklist like Day 8 of the original build.
+- **Day 21:** Deploy, verify live. **Milestone: basic recruiter view shipped (still no auth — single shared view for now).**
+
+## Week 4: Database Migration Prep + Hardening
+
+- **Day 22:** Research free-tier hosted Postgres options (Supabase, Neon) — confirm free-tier limits are sufficient for expected usage.
+- **Day 23:** Create a Supabase/Neon free project, get connection credentials, store securely (mirroring the `.env`/Secrets pattern established Day 3–9 of the original build).
+- **Day 24:** Write a new `core/db_postgres.py` implementing the exact same function signatures as `core/db.py` (this is the payoff of the layered architecture — no other file needs to change).
+- **Day 25:** Write a one-time migration script to copy existing SQLite data into the new Postgres database.
+- **Day 26:** Add an environment-based switch (`DB_BACKEND=sqlite|postgres`) in `core/services.py`, mirroring the `get_ai_provider()` pattern already used for Groq.
+- **Day 27:** Test the full app against Postgres locally — every flow, like the Day 6 MVP verification.
+- **Day 28:** Deploy with Postgres as the production backend — this permanently fixes the "SQLite resets on redeploy" limitation documented since Day 6.
+- **Day 29:** Full regression pass — re-run all 28+ existing automated tests plus everything added this month, against the new backend.
+- **Day 30:** Final documentation update: README, `future-scope.md` revision reflecting what's now shipped vs. still future, and a short retrospective on the 30-day sprint itself (mirroring `challenge-retrospective.md`'s format).
+
+## Guardrails (carried over from the original 10-day build)
+
+- Every new feature must have a corresponding automated test before being considered "done" — the Day 8 standard.
+- Every day ends with a working, deployed app — never leave production broken overnight, per the Day 6/7 lesson.
+- Free-tier-only, unless a deliberate, documented decision says otherwise — the Day 5 principle.
+- If a day's plan turns out to be blocked, the fallback is always: mock it behind the existing abstraction, and come back to the real implementation later.
