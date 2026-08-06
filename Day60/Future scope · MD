@@ -1,0 +1,38 @@
+# AI Interview Coach — Future Scope
+
+**Version:** 1.0.0 | **As of:** Day 10 completion
+
+This document outlines how AI Interview Coach could realistically evolve beyond v1.0, tied to the actual architecture and decisions made during the 10-day build — not a generic feature wishlist.
+
+## Next 3 Months
+
+**Goal: Deepen the core value proposition before adding new user types.**
+
+- **Voice input** — the original v1.0 stretch goal, deferred due to time. `pages/practice_session.py` already isolates answer input behind a single text_area; adding a speech-to-text toggle (e.g., via a free browser-based Web Speech API widget) requires no changes to `services.submit_answer()` or the AI evaluation pipeline, since both already just receive plain text.
+- **Advanced analytics** — skill-category breakdowns (technical vs. behavioral score trends) and keyword-frequency analysis across sessions. The `feedback` table already stores `keywords_included`/`keywords_missing` per answer; this is a query/aggregation feature on `core/db.py`, not a schema change.
+- **Company-specific question packs** — pre-built JD templates for common companies/roles, reducing friction for users who don't want to paste a real JD.
+- **Groq rate-limit resilience** — add request queuing/backoff if usage grows beyond the free tier's rate limits, keeping the app fully free.
+
+## Next 6 Months
+
+**Goal: Support the second user type validated but deferred on Day 1 — recruiters.**
+
+- **Recruiter-facing view** — a separate, lightweight page (or separate app instance) that lets a recruiter define a role/JD once and review multiple candidates' sessions side-by-side. This is the natural extension of the existing `get_session_detail()` service function, generalized to compare across sessions rather than one at a time.
+- **Multi-user authentication** — the single biggest architectural change deferred from v1.0. Would require adding a `users` table, scoping all `sessions` queries by `user_id`, and choosing an auth provider (Streamlit doesn't have native auth; a free option like Supabase Auth would fit the "free-tier-only" constraint established throughout this build).
+- **Migrate from SQLite to a hosted database** — SQLite resets on Streamlit Cloud redeploys (a documented v1.0 limitation). A free-tier hosted Postgres (e.g., Supabase or Neon) would solve this and is a prerequisite for real multi-user auth anyway.
+
+## Next 12 Months
+
+**Goal: Move beyond a single-page tool toward a structured interview-prep product.**
+
+- **Structured "interview tracks"** — multi-session curricula (e.g., "5-day System Design Prep") that sequence questions with increasing difficulty, using the existing session/question data model extended with a `track_id`.
+- **Peer/mentor review layer** — optionally share a session (read-only, via `get_session_detail()`) with a mentor or peer for human feedback alongside the AI's.
+- **Mobile-friendly redesign** — Streamlit's layout has real mobile constraints; a 12-month horizon is realistic for evaluating a dedicated frontend (e.g., a lightweight React app) that calls the same `core/services.py` logic through a proper REST API — the exact seam anticipated in Day 2's API.md, which documented the service layer as a "lift into real endpoints" boundary.
+
+## What Won't Change
+
+Regardless of which of the above ship, three Day 1–2 architectural decisions are expected to remain foundational:
+
+1. The `AIProvider` interface — already proven across a real vendor swap (Anthropic → Groq)
+2. The layered UI/Service/AI/Data separation — already proven to isolate every major bug fix to one layer
+3. A free-tier-first tooling philosophy — established under real constraints, not just as an initial choice
